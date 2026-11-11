@@ -160,6 +160,101 @@ if any attempt fails or lacks usage. No mean of per-request token rates is
 used. HTTP requests do not attest that a GPU ran. Client/server clocks do not
 enter latency arithmetic; the client uses a monotonic clock.
 
+## Offline GPU smoke evidence
+
+The development `verify-smoke` command joins the fixed CUDA payload's stdout to
+exported Job/Pod evidence and an explicit capture receipt. It performs no network
+requests, reads no credentials and starts no workloads. Passing means the
+operator-supplied files are **internally consistent**, not independently attested
+GPU execution or certified whole-GPU isolation. It does not create a campaign
+envelope, relax comparison gates or promote synthetic fixtures to live results.
+
+Use only the approved dedicated staging target and an already authorized smoke
+Job. Preserve complete exports and every attempt, including unsuccessful runs.
+After the Job terminates, capture its Job object and the complete Pod list from
+the dedicated namespace, then the single benchmark container's complete stdout.
+Choose the Pod by its controller owner UID matching the exported Job UID, not a
+name alone. Read the Pod UID and current container ID again after capturing logs;
+if they changed, retain the capture as invalid rather than relabeling it. Do not
+use `--previous`, `--timestamps`, `--tail`, a line filter or a selected "best" JSON
+record. The verifier requires exactly one complete JSON stdout object.
+
+These example commands are manual read-only capture instructions, not actions
+the harness executes. Fill the explicit approved context, namespace and names
+before running them. They do not authorize applying or creating a Job:
+
+```sh
+kubectl --context "$APPROVED_CONTEXT" --namespace "$APPROVED_NAMESPACE" \
+  get job "$JOB_NAME" -o json > job.json
+kubectl --context "$APPROVED_CONTEXT" --namespace "$APPROVED_NAMESPACE" \
+  get pods -o json > pods.json
+# First confirm POD_NAME's controller owner UID is the captured Job UID.
+kubectl --context "$APPROVED_CONTEXT" --namespace "$APPROVED_NAMESPACE" \
+  logs "$POD_NAME" -c benchmark > stdout.json
+# Recheck this Pod's UID and current benchmark containerID before making a receipt.
+kubectl --context "$APPROVED_CONTEXT" --namespace "$APPROVED_NAMESPACE" \
+  get pod "$POD_NAME" -o json > pod-after-capture.json
+```
+
+Fill a receipt with the actual observed identities, exact raw stdout file hash
+and timezone-aware capture time. `containerID` includes its runtime prefix.
+`imageID` is copied exactly from the benchmark container status, not substituted
+with the requested image digest. The following template is intentionally invalid
+until replaced with real capture facts:
+
+```json
+{
+  "schema_version": 1,
+  "namespace": "REPLACE_WITH_CAPTURED_NAMESPACE",
+  "jobUID": "REPLACE_WITH_JOB_UID",
+  "podUID": "REPLACE_WITH_POD_UID",
+  "containerName": "benchmark",
+  "containerID": "REPLACE_WITH_FULL_CONTAINER_RUNTIME_ID",
+  "sampleID": "REPLACE_WITH_PREREGISTERED_SAMPLE_ID",
+  "imageID": "REPLACE_WITH_OBSERVED_IMAGE_ID",
+  "stdoutSHA256": "REPLACE_WITH_SHA256_OF_EXACT_STDOUT_BYTES",
+  "capturedAt": "REPLACE_WITH_TIMEZONE_AWARE_CAPTURE_TIMESTAMP"
+}
+```
+
+The receipt is an operator declaration, not an authenticated provenance chain.
+The verifier cannot discover deleted attempts, missing log records, forged
+exports or a false receipt. Keep the original files private and independently
+audit the capture before relying on it.
+
+```sh
+python -m benchmarks.harness verify-smoke --job job.json --pods pods.json \
+  --stdout stdout.json --receipt receipt.json --output smoke-verification.json
+python -m unittest discover -s tests -p test_gpu_evidence.py -v
+```
+
+The check requires the exact fixed payload and its SHA-256, matching sample
+labels/environment, digest-pinned requested image parity, the expected resource
+requests/limits, exactly one controller-owned Pod and one regular benchmark
+container, no restart/init/ephemeral attempts, successful termination and complete
+raw payload timings. Missing evidence remains incomplete; contradictory evidence
+is rejected. Non-finite values, duplicate JSON keys, additional stdout records,
+deep nesting and oversized inputs are rejected. The command exits nonzero unless
+the supplied evidence is internally consistent. A report output file must not
+already exist; this prevents accidentally overwriting capture files or an earlier
+report. Omit `--output` to print the report to stdout instead.
+
+Inputs are bounded regular files: Job 1 MiB, Pod list 8 MiB, stdout 256 KiB and
+receipt 64 KiB, with a maximum JSON nesting depth of 64. It reports raw-file
+hashes and the single smoke's raw step times without copying full Pod manifests,
+environment variables or raw error content. Cross-component timing checks allow
+a fixed two seconds of clock difference. The sum of step timings must fit its
+reported interval with only the serialized endpoint resolutions as allowance,
+not that two-second clock allowance. These checks tolerate coarse event
+timestamps but do not validate clock health.
+Requested images and runtime image IDs are separate observations; their digest
+mapping remains unknown. MIG/sharing/exclusivity, correctness beyond the finite
+output smoke check, performance superiority and savings remain unverified.
+
+See [GPU validation and attribution acceptance](../docs/gpu-validation.md) for
+the primary-source research and hardware test matrix that must precede a trusted
+per-container GPU collector. This verifier is not that collector.
+
 ## Fair experiment design and comparison gate
 
 1. Pre-register at least 20 paired **independent run blocks**, attempt IDs,

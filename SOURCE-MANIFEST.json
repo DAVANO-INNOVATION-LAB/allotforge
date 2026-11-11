@@ -1,5 +1,5 @@
 {
-  "created_at": "2026-11-11T22:03:07.820125+00:00",
+  "created_at": "2026-11-11T22:46:54.863942+00:00",
   "files": {
     ".dockerignore": {
       "bytes": 75,
@@ -30,8 +30,8 @@
       "sha256": "27168c0003bb7fe1b99bb6602702fd3a32a7b2a35a239f08522627de6ad52080"
     },
     "README.md": {
-      "bytes": 18891,
-      "sha256": "d50363a55332168c27a6c1db32bbd58af26d6bf2a6a22beec5c973fc7c6ba7e2"
+      "bytes": 19039,
+      "sha256": "2b0577aa5ea93bc7d8e4a7e41e3af918abf7d6611503b73c167a64f9c7556bd1"
     },
     "RELEASE-VERIFICATION.md": {
       "bytes": 2816,
@@ -42,8 +42,8 @@
       "sha256": "c2e37e217a0a180e003e2cfaa5e8ab499b0e14cb3e4ec4dc2bd6585ba3895317"
     },
     "benchmarks/README.md": {
-      "bytes": 15701,
-      "sha256": "63d3c331f82d88ee1b7094fec79144b75b67da214fec3c674d27e871c39510cd"
+      "bytes": 20967,
+      "sha256": "89047d8c968ade4feeba04a189c3dbb2086fb8af9d8073feef78c3ad3648f841"
     },
     "benchmarks/__init__.py": {
       "bytes": 77,
@@ -52,6 +52,10 @@
     "benchmarks/adapters.py": {
       "bytes": 7019,
       "sha256": "e9c22963f4860b18138525c54ef60d1508356c0f13a64a24969f8da7fa4e3c2f"
+    },
+    "benchmarks/evidence.py": {
+      "bytes": 31538,
+      "sha256": "b68a3978a5501c478f9813f5a6723d9f789c27a4dd3ea4d5435bbdbb593fd192"
     },
     "benchmarks/examples/batch-plan.template.json": {
       "bytes": 229,
@@ -66,8 +70,8 @@
       "sha256": "f35f38963c0cd99a76e95196ecf15058aba4a7179568f964628273d26d03bbef"
     },
     "benchmarks/harness.py": {
-      "bytes": 26078,
-      "sha256": "6f9e2590b4b45b24f01fe5326227220d6fe6c76a59a28db0184b34171167392d"
+      "bytes": 27002,
+      "sha256": "63ed54859d5ddba2b13e5d18243bacd621cadc4acc4755b7f0f2ffc2d37859ad"
     },
     "benchmarks/results/environment-2026-11-11.json": {
       "bytes": 765,
@@ -389,6 +393,10 @@
       "bytes": 8871,
       "sha256": "dac587156a85239738e0a474a2008130fd11bf8329886dc4223969277e78e02f"
     },
+    "docs/gpu-validation.md": {
+      "bytes": 9711,
+      "sha256": "2a2e1e53d7a0376ded190626156f75b20b4b3714881b2c6368bcb06684b5eaa9"
+    },
     "docs/observability.md": {
       "bytes": 17280,
       "sha256": "15d2aa5937ae468973dcbfc4ed2823b7c8265b8774d177b2833ad6c9eb24667f"
@@ -480,6 +488,10 @@
     "tests/test_diagnostics.py": {
       "bytes": 29473,
       "sha256": "7279cb481a12b527ce4dfbb5b2162308ed4863a47f1236fb5ba5383d654f6941"
+    },
+    "tests/test_gpu_evidence.py": {
+      "bytes": 24553,
+      "sha256": "23d8613b54d4d106b6f8798555cc8c97e11f29c7de91a425c1da83c98da32e81"
     },
     "tests/test_inventory.py": {
       "bytes": 8084,

@@ -401,6 +401,7 @@ def main():
     p = sub.add_parser("micro"); p.add_argument("--iterations", type=int, default=200); p.add_argument("--repeats", type=int, default=5); p.add_argument("--output")
     p = sub.add_parser("plan"); p.add_argument("--config", required=True); p.add_argument("--product", choices=PRODUCTS, required=True); p.add_argument("--output")
     p = sub.add_parser("import-job"); p.add_argument("--job", required=True); p.add_argument("--pods", required=True); p.add_argument("--output")
+    p = sub.add_parser("verify-smoke", help="Check local GPU smoke artifacts without execution or authentication"); p.add_argument("--job", required=True); p.add_argument("--pods", required=True); p.add_argument("--stdout", required=True); p.add_argument("--receipt", required=True); p.add_argument("--output")
     p = sub.add_parser("aggregate"); p.add_argument("--runs", nargs="+", required=True); p.add_argument("--output")
     p = sub.add_parser("compare"); p.add_argument("--baseline", required=True); p.add_argument("--candidate", required=True); p.add_argument("--output")
     p = sub.add_parser("inference"); p.add_argument("--config", required=True); p.add_argument("--base-url", required=True); p.add_argument("--key-file"); p.add_argument("--output")
@@ -410,12 +411,20 @@ def main():
         elif args.command == "micro": result = microbenchmark(args.iterations, args.repeats)
         elif args.command == "plan": result = make_job(args.product, **load(args.config))
         elif args.command == "import-job": result = import_job(load(args.job), load(args.pods)["items"])
+        elif args.command == "verify-smoke":
+            from .evidence import read_artifact, verify_smoke_bundle, write_report
+            result = verify_smoke_bundle(*(read_artifact(getattr(args, name), name) for name in ("job", "pods", "stdout", "receipt")))
         elif args.command == "aggregate": result = aggregate_runs([load(p) for p in args.runs])
         elif args.command == "compare": result = compare(load(args.baseline), load(args.candidate))
         else: result = inference(load(args.config), args.base_url, args.key_file)
-        write(args.output, result)
+        if args.command == "verify-smoke" and args.output:
+            write_report(args.output, result)
+        else:
+            write(args.output, result)
+        if args.command == "verify-smoke" and result["status"] != "internally-consistent":
+            raise SystemExit(1)
     except (ValueError, TypeError, KeyError, OSError) as exc:
-        parser.error(str(exc))
+        parser.error("verify-smoke: artifact I/O failed" if args.command == "verify-smoke" and isinstance(exc, OSError) else str(exc))
 
 
 if __name__ == "__main__":

@@ -148,6 +148,7 @@ curl http://127.0.0.1:8080/api/v1/execution/status
 - [Ray and Kueue manifest planning](docs/ray-kueue.md)
 - [Observability sources and limitations](docs/observability.md)
 - [Benchmark methodology and actual results](benchmarks/README.md)
+- [Offline GPU smoke verification](benchmarks/README.md#offline-gpu-smoke-evidence) and [future collector acceptance tests](docs/gpu-validation.md)
 
 Local `/pools` and `/policies` mutate only SQLite. Managed `/control/*` routes are a separate authority. `/evaluate` and `/ray/plan` never submit; the explicitly enabled `/execution/*` API can create real Jobs. Submission is not admission, allocation or successful GPU execution.
 
