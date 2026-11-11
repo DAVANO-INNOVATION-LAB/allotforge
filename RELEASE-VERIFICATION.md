@@ -1,28 +1,28 @@
-# AllotForge 0.7.0 candidate verification
+# AllotForge 0.8.0 candidate verification
 
-Local verification was performed on 2026-11-11. This document does not assert publication. Remote CI and any later release must identify the exact tested commit in GitHub Actions.
+This document describes the candidate verification scope, not publication. Any later remote CI or release must identify its exact tested commit in GitHub Actions.
 
 ## Local checks
 
-- Full Python suite: **444 tests passed**, including 48 cAdvisor tests and 17 smoke-verifier test methods with adversarial cases.
-- Full UI DOM/API suite: **280 checks passed** (64 main UI/API, 27 control, 57 operations, 24 assignments, 43 diagnostics/session, 65 advisor).
-- Python compilation, all six JavaScript syntax checks, whitespace and local documentation links checked.
-- A 0.7.0 wheel was built locally. The cAdvisor module and updated UI assets are included; source-checkout benchmark tools remain in the source distribution rather than the application wheel.
+- Full Python suite: **468 tests passed**, including 24 new timeline tests. Existing source, advisor, smoke-verifier and control tests remain included.
+- Full UI DOM/API suite: **356 checks passed** (64 main UI/API, 27 control, 57 operations, 24 assignments, 43 diagnostics/session and 141 advisor).
+- Python compilation, all six JavaScript syntax checks, whitespace and local document links checked.
+- A 0.8.0 wheel was built locally with the updated advisor module and interface assets. Dependencies are unchanged.
 
-## Feature review
+## Independent review
 
-The cAdvisor source was reviewed independently against source timestamp, current-incarnation identity, quantity and mode-separation boundaries. Disabled or mismatched injected readers cannot issue the wrong source query. Duplicate runtime identities cannot double-count CPU or memory. The interface withholds values unless source status and both source-level and per-metric timestamp assertions are consistent. Existing custom-adapter and session/navigation behavior remains covered.
+Randomized comparison of 240 synthetic backend cases against the 0.7.0 baseline found identical prior summaries and assessments after stripping only the new timeline field. Additional cross-language checks generated 120 backend snapshots with microsecond bounds in both source modes: all 300 observed timelines rendered, all 60 cAdvisor GPU timelines remained withheld, and 23 malformed/source/unit/precision mutations were rejected.
 
-The offline smoke verifier was independently exercised with 3,190 field mutations and 34 quantity edge cases. Oversized integers, contradictory attempts, duplicate Pod identities, malformed timezone offsets and output overwrites were checked. Internally consistent supplied evidence still does not authenticate a capture or certify GPU execution.
+The review also checked refresh and navigation invalidation, pending-load reopening, new-session credential changes and late old-session responses. Old inspected chart content is erased at refresh/navigation start. A pending refresh cannot reopen old evidence; late responses cannot cross the existing inventory session boundary. These checks are synthetic, not native browser or production authentication certification.
 
-## Verification limits
+## Data and interpretation boundaries
 
-The source-timestamp prerequisite remains an administrator assertion. No live kubelet, cAdvisor collector, ingestion pipeline, real GPU, target runtime or matched CPU/GPU performance trial was run. Request counts do not establish physical GPU exclusivity. The source modes are not mixed, and cAdvisor supplies no GPU activity or processor-suitability result.
+Only existing accepted metric windows become timelines. Every non-observed metric returns a null timeline. An accepted metric has exactly 15 rolling interval bounds, with null for any missing shared minute and zero only for a measured zero. Values retain the existing per-container mean/sum or GPU-weighted mean semantics. Timeline data do not alter the CPU/GPU assessment or imply whole-job profiling, performance, cost, physical device ownership or guaranteed capacity.
 
-Stage 15 desktop/inspection previews use synthetic fixtures and are visibly labelled static development-candidate previews, not browser QA or real telemetry. DOM/API tests do not establish native browser layout or interaction compatibility. Historical benchmark result files remain earlier evidence, not new performance results.
+The cAdvisor source remains CPU/RAM-only and requires administrator-asserted timestamp preservation. No real cAdvisor collector, ingestion pipeline, GPU, target cluster or matched processor trial was run. No additional query, background polling, history store, runtime-socket access, cluster writes or paid resources were added.
 
 ## Publication gate
 
-The existing release workflow tests Python 3.11/3.12 and UI contracts, then runs native admission, diagnostic parser and deployment checks on disposable Kubernetes 1.31.4. These checks do not validate Kueue scheduling, CNI, production authorization, collectors or GPU execution. Only the publishing job receives contents-write permission; it verifies artifact checksums and the tested main head before creating a development prerelease and a new tag targeted to that commit.
+Stage 16 previews use the actual interface with synthetic observations and are visibly labelled static development-candidate previews, not native browser QA or real telemetry. The source and tests are prepared on a feature branch; main and the 0.7.0 release are unchanged unless a separately authorized update is completed.
 
-This candidate is prepared on a feature branch. No production resources, paid workloads, runtime-socket access or collector permissions were provisioned. The trusted-operator access boundary, compatibility names and pending license selection remain in effect.
+The existing main-branch release workflow requires Python 3.11/3.12 and UI checks, native admission/diagnostic parser/deployment checks on disposable Kubernetes 1.31.4, then a build of the exact source. Only the publishing job receives contents-write permission. It verifies artifact checksums and the tested main head before creating a development prerelease and a new tag. This gate does not validate real GPU execution, production authorization, Kueue scheduling, CNI or collector correctness.

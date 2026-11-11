@@ -17,6 +17,8 @@ from .observability import (MAX_SAMPLES, MAX_SERIES, ObservationUnavailable,
                             PrometheusReader, iso, token)
 
 WINDOW = 900
+BUCKET_SECONDS = 60
+BUCKET_COUNT = WINDOW // BUCKET_SECONDS
 POLICY = {'min_samples': 41, 'min_span_seconds': 600, 'min_coverage_percent': 80,
           'max_gap_seconds': 90, 'freshness_seconds': 120}
 METRICS = {
@@ -92,7 +94,23 @@ def unknown_metric(key, reason, status='unknown', metric_specs=None):
     metric_specs = METRICS if metric_specs is None else metric_specs
     return {'status': status, 'mean': None, 'p95': None, 'peak': None, 'unit': metric_specs[key][1],
             'source_metric': metric_specs[key][0], 'scope': 'pod-containers', 'sample_start': None,
-            'sample_end': None, 'sample_count': 0, 'coverage_percent': 0, 'reason': reason}
+            'sample_end': None, 'sample_count': 0, 'coverage_percent': 0, 'reason': reason,
+            'timeline': None}
+
+
+def _timeline(buckets, now):
+    """Expose only accepted shared means, with explicit gaps and rolling bounds.
+
+    Bounds describe the advisor snapshot window, not source sample timestamps
+    or the exact Prometheus evaluation time.
+    Interior buckets are left-inclusive/right-exclusive; the existing source
+    sample exactly at ``now`` belongs to the final bucket ending at ``now``.
+    """
+    start = now - WINDOW
+    return {'bucket_seconds': BUCKET_SECONDS, 'aggregation': 'aligned-minute-means',
+            'points': [{'window_start': iso(start + b * BUCKET_SECONDS),
+                        'window_end': iso(start + (b + 1) * BUCKET_SECONDS),
+                        'value': buckets.get(b)} for b in range(BUCKET_COUNT)]}
 
 
 def _series_window(samples, upper, now, started):
@@ -131,9 +149,12 @@ def _series_window(samples, upper, now, started):
         return None, 'A sample gap exceeds the allowed 90 seconds.', 'insufficient'
     buckets = defaultdict(list)
     for timestamp, value in ordered:
-        bucket = min(14, int((timestamp - (now - WINDOW)) / 60))
+        bucket = min(BUCKET_COUNT - 1, int((timestamp - (now - WINDOW)) / BUCKET_SECONDS))
         buckets[bucket].append(value)
-    return {'values': ordered, 'buckets': {b: sum(v) / len(v) for b, v in buckets.items()}}, '', 'observed'
+    means = {b: sum(v) / len(v) for b, v in buckets.items()}
+    if not all(math.isfinite(value) for value in means.values()):
+        return None, 'Non-finite aligned minute mean was rejected.', 'unknown'
+    return {'values': ordered, 'buckets': means}, '', 'observed'
 
 
 def _normalize(series, workloads, now, cluster, cadvisor_mode=False):
@@ -210,7 +231,7 @@ def _normalize(series, workloads, now, cluster, cadvisor_mode=False):
                     readings.append((c, reading))
                 else:
                     shared = set.intersection(*(set(r['buckets']) for _, r in readings))
-                    coverage = len(shared) / 15 * 100
+                    coverage = len(shared) / BUCKET_COUNT * 100
                     if coverage < POLICY['min_coverage_percent']:
                         m = unknown(metric, 'Aligned one-minute buckets cover less than 80% of the 15-minute window.', 'insufficient')
                         m['coverage_percent'] = round(coverage, 1)
@@ -221,18 +242,24 @@ def _normalize(series, workloads, now, cluster, cadvisor_mode=False):
                         # Peak uses per-container maxima: a conservative upper bound for aggregate CPU/RAM,
                         # and any GPU container's maximum for low-activity candidate gating.
                         peaks = [max(v for _, v in r['values']) for _, r in readings]
-                        m = {'status': 'observed', 'mean': round(sum(values) / len(values), 4),
+                        mean = sum(values) / len(values)
+                        peak = max(peaks) if metric == 'gpu_busy_percent' else sum(peaks)
+                        if not all(math.isfinite(value) for value in [*values, mean, peak]):
+                            metrics[metric] = unknown(metric, 'Non-finite workload aggregate was rejected.')
+                            continue
+                        windows[metric] = dict(zip(sorted(shared), values))
+                        m = {'status': 'observed', 'mean': round(mean, 4),
                              'p95': sorted(values)[math.ceil(len(values) * .95) - 1],
-                             'peak': max(peaks) if metric == 'gpu_busy_percent' else sum(peaks),
+                             'peak': peak,
                              'unit': unit, 'source_metric': source_metric, 'scope': 'pod-containers',
                              'sample_start': iso(max(r['values'][0][0] for _, r in readings)),
                              'sample_end': iso(min(r['values'][-1][0] for _, r in readings)),
                              'sample_count': min(len(r['values']) for _, r in readings),
                              'coverage_percent': round(coverage, 1),
+                             'timeline': _timeline(windows[metric], now),
                              'reason': 'Runtime identity matched. Adapter-asserted attribution; equal-weight aligned minute means. Not independent device-ownership verification.'}
                         if cadvisor_mode:
                             m['reason'] = ('Exact current Pod UID and full container runtime cgroup matched. Administrator-asserted original source timestamps; equal-weight aligned minute means of adjacent CPU counter interval rates. Not exact continuous integration; peak is an interval-average bound, not instantaneous CPU.' if metric == 'cpu_cores' else 'Exact current Pod UID and full container runtime cgroup matched. Administrator-asserted original source gauge timestamps; equal-weight aligned minute means. Working set is usage minus inactive_file, not RSS, heap or guaranteed nonreclaimable memory.')
-                        windows[metric] = dict(zip(sorted(shared), values))
                         if metric == 'cpu_cores':
                             gpu_readings = [r for c, r in readings if c['gpu_count'] is not None and c['gpu_count'] > 0]
                             gpu_container_cpu = {b: sum(r['buckets'][b] for r in gpu_readings) for b in shared}

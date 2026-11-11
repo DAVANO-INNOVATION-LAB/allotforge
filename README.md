@@ -4,7 +4,7 @@
 
 AllotForge is the new product name for this GPU resource console. The existing `davano` Python module, `DAVANO_*` configuration variables, `davano.dev/*` labels and `fleet.davano.io` CRDs remain supported unchanged for upgrade compatibility. The new `allotforge` command starts the same application.
 
-AllotForge combines GPU resource inventory, local advisory pools and policy, RayJob manifest planning, optional exporter/queue observation, and separately enabled Kubernetes control, namespace GPU-ceiling edits and constrained Job execution/reassignment. The UI and API run together. Version **0.7.0 is a development prototype**, not a production-certified GPU platform. License selection is pending.
+AllotForge combines GPU resource inventory, local advisory pools and policy, RayJob manifest planning, optional exporter/queue observation, and separately enabled Kubernetes control, namespace GPU-ceiling edits and constrained Job execution/reassignment. The UI and API run together. Version **0.8.0 is a development prototype**, not a production-certified GPU platform. License selection is pending.
 
 **The default is synthetic demo data with no cluster credentials or cluster writes.** Live inventory is read-only. Cluster mutation requires separate opt-in configuration and permissions; installing the inventory console does not install its operator. No live GPU cluster, device exporter or competitor platform was exercised in this build.
 
@@ -139,7 +139,9 @@ curl http://127.0.0.1:8080/api/v1/execution/status
 
 - [API contract and authentication boundaries](docs/api-contract.md)
 - [GPU, CPU and memory advisory fit](docs/resource-fit.md)
-- [0.7.0 candidate notes](docs/releases/0.7.0.md)
+- [0.8.0 candidate notes](docs/releases/0.8.0.md)
+- [Workload observation timelines](docs/workload-timeline.md)
+- [0.7.0 release notes](docs/releases/0.7.0.md)
 - [0.6.0 release notes](docs/releases/0.6.0.md)
 - [0.5.0 release notes](docs/releases/0.5.0.md)
 - [Deployment diagnostics](docs/deployment-diagnostics.md)

@@ -1,4 +1,4 @@
-# AllotForge API v1 (0.6.0 development prototype)
+# AllotForge API v1 (development prototype)
 
 Responses use JSON. OpenAPI at `/openapi.json` and `/docs` describes current input schemas. Inputs reject unknown fields and constrain identifiers/counts. Mutating requests must be same-origin and bounded to 64 KiB; POST/PUT/PATCH require `application/json`. These checks are not a substitute for authentication.
 
@@ -22,7 +22,7 @@ Control and execution gates are independent. Enabling control does not authentic
 
 ### `GET /api/v1/state`
 
-Returns `meta`, `summary`, `nodes`, `pools`, `policies`, `workloads`, `integrations`, `observability` and local `events`.
+Returns `meta`, `summary`, `nodes`, `pools`, `policies`, `workloads`, `integrations`, `observability`, `workload_advisor` and local `events`.
 
 An abbreviated **synthetic demo** response is:
 
@@ -34,7 +34,7 @@ An abbreviated **synthetic demo** response is:
     "observed_at": "<inventory observation timestamp>",
     "read_only_cluster": true,
     "enforcement": "advisory-only",
-    "version": "0.4.0"
+    "version": "0.8.0"
   },
   "summary": {
     "nodes": 6,
@@ -238,3 +238,7 @@ Local API tests and controlled transport fixtures verify these contracts, not li
 `GET /api/v1/state` includes `workload_advisor`. Inventory-only mode has no application authentication and must remain on loopback or behind a reviewed authenticated proxy. Advisor enablement does not add authentication. When project execution is enabled, the existing inventory middleware requires the separate administrator token; project credentials do not unlock advisor data. It contains all-Pod request budgets, a rolling-window observation status, policy thresholds, scoped metrics and limited-confidence experiment advice. It adds no mutation route. Unknown/stale/conflicting values are null, not zero; cost/performance remain unknown. The optional custom-adapter contract and attribution limits are documented in [Workload advisor](workload-advisor.md).
 
 The separate `cadvisor-cpu-memory` source reports only CPU interval rates and memory working set. Its input requirements distinguish administrator-asserted timestamp preservation from independently verified configuration. Actual cAdvisor source metric names and derivation provenance remain visible. This mode cannot produce GPU activity or processor-suitability evidence, including when an unexpected custom GPU series appears in the response. It adds no endpoint or authorization grant. See [source prerequisites and aggregation limits](cadvisor-cpu-memory.md).
+
+### Workload metric timeline
+
+Accepted advisor metrics additionally expose `timeline` with `bucket_seconds=60`, `aggregation="aligned-minute-means"` and exactly 15 ordered interval points (`window_start`, `window_end`, `value`). These are derived interval bounds; missing shared values are `null`, never zero-filled. Every non-observed metric has `timeline: null`. It adds no query, history store or placement rule. See [timeline semantics and limits](workload-timeline.md).

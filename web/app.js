@@ -56,6 +56,7 @@ async function loadCapabilities(generation,credential){
 }
 async function load(silent=false){
  if(busy)return;busy=true;document.getElementById('refresh-icon').classList.add('spin');
+ invalidateAdvisorEvidence();
  const generation=inventoryGeneration,credential=apiToken;
  try{
   const [snapshotResult]=await Promise.allSettled([api('/state',{headers:{Authorization:credential?`Bearer ${credential}`:''}}),loadCapabilities(generation,credential)]);if(!currentInventorySession(generation,credential))return;if(snapshotResult.status==='rejected')throw snapshotResult.reason;const snapshot=snapshotResult.value;invalidateAdvisorEvidence();previousSnapshot=loadError?null:state;state=snapshot;loadError=null;loadErrorStatus=null;
@@ -66,7 +67,7 @@ async function load(silent=false){
  }catch(error){if(!currentInventorySession(generation,credential))return;invalidateAdvisorEvidence();loadError=error.message;loadErrorStatus=error.status;document.getElementById('source-chip').className='source-chip';document.getElementById('source-chip').innerHTML='Inventory unavailable';render();}
  finally{if(currentInventorySession(generation,credential)){busy=false;document.getElementById('refresh-icon').classList.remove('spin');}}
 }
-function navigate(){leaveDiagnostics();clearMovePlan();invalidateAllocation();invalidateExecutionPlan();if(document.getElementById('modal').open)closeDialog();const next=location.hash.slice(1).split('?')[0]||'overview';page=titles[next]?next:'overview';query='';filter='all';render();closeMenu();if(['control','assignments'].includes(page)&&controlState?.enabled&&apiToken)loadControlResources();}
+function navigate(){leaveDiagnostics();clearMovePlan();invalidateAllocation();invalidateExecutionPlan();invalidateAdvisorEvidence();if(document.getElementById('modal').open)closeDialog();const next=location.hash.slice(1).split('?')[0]||'overview';page=titles[next]?next:'overview';query='';filter='all';render();closeMenu();if(['control','assignments'].includes(page)&&controlState?.enabled&&apiToken)loadControlResources();}
 function render(){
  syncDiagnosticsCredential();
  document.getElementById('navigation').innerHTML=navItems.map(([id,label,symbol])=>`<a class="nav-item ${page===id?'active':''}" href="#${id}" ${page===id?'aria-current="page"':''}>${icon(symbol,16)}<span>${label}</span>${id==='pools'&&state?`<span class="nav-count">${state.pools.length}</span>`:''}</a>`).join('');

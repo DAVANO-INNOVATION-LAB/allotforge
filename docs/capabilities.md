@@ -1,6 +1,6 @@
 # Capabilities and ownership boundaries
 
-This document describes the **0.6.0 implementation**, including code paths that are disabled by default. It is not evidence of deployment, GPU execution, production safety or comparative performance. The default app uses labelled synthetic inventory; no cluster credentials, operator, execution access or exporter connection are enabled automatically.
+This document describes the **current implementation**, including code paths that are disabled by default. It is not evidence of deployment, GPU execution, production safety or comparative performance. The default app uses labelled synthetic inventory; no cluster credentials, operator, execution access or exporter connection are enabled automatically.
 
 ## Implemented capabilities and authority
 
@@ -17,7 +17,7 @@ This document describes the **0.6.0 implementation**, including code paths that 
 | Queued workload reassignment | Opt-in cancel-and-recreate | Replace eligible broker-owned queued Jobs within/across authorized projects, with target-name reservation and durable operation state. No running/admitted-job migration. |
 | Pod pending diagnostics | Read-only observation | Sanitized Pod conditions and waiting reasons; Pending alone does not prove GPU exhaustion. |
 | Kueue queue observation | Read-only, opt-in | Discovers a served API and reads conditions. Separately enabled scoped pending-summary windows preserve identity uncertainty and never predict admission times. |
-| Workload advisor | Read-only, opt-in measurements | All-Pod budgets; cAdvisor CPU/RAM-only observations with strict identity/timestamp prerequisites, or separate custom-adapter comparison evidence. No automatic moves or claimed speed/cost winner. |
+| Workload advisor | Read-only, opt-in measurements | All-Pod budgets and bounded accepted-window timelines; cAdvisor CPU/RAM-only observations with strict identity/timestamp prerequisites, or separate custom-adapter comparison evidence. No automatic moves or claimed speed/cost winner. |
 | Deployment diagnostics | Bounded, on-demand evidence | Separates configuration, successful narrow reads and API discovery from unverified writes, enforcement and runtime. No production-ready verdict. |
 | GPU telemetry | Read-only, opt-in adapters | Selected NVIDIA DCGM and AMD exporter metrics through Prometheus; no real hardware validation, Intel telemetry unsupported. |
 | Benchmarks | Scoped measurement tooling | Local CPU smoke results, offline batch adapters and bounded HTTP inference measurements; no included live GPU or competitor run. |

@@ -51,6 +51,10 @@ The reader uses the same verified HTTPS, bounded-response and no-redirect transp
 
 Results retain metric name, scope, sample start/end, minimum per-container sample count, coverage, explanation and source. Observation-window time and inventory-snapshot time are separately recorded. Kubernetes Node and Pod snapshots are not atomic, and cluster state can change immediately afterward.
 
+## Inspect the observation window
+
+The inspection panel includes a [bounded minute timeline](workload-timeline.md) for accepted metrics. It uses the same validated aggregate window as the summary, preserves missing intervals as unknown and never joins gaps. It does not retain history or change the CPU/GPU assessment.
+
 ## A measurable comparison
 
 The inspection panel provides this checklist. It does not execute it:
