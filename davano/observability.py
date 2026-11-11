@@ -19,6 +19,7 @@ from urllib.request import Request
 
 from .inventory import open_without_redirect
 from .kube import ApiError, KubeClient
+from .pending_visibility import PendingVisibilityReader, configured_targets, empty_visibility, unknown_position
 
 STALE_AFTER_SECONDS = 120
 OBSERVATION_WINDOW_SECONDS = 900
@@ -339,7 +340,7 @@ def normalize_queue_resource(resource, kind):
     item = {'id': f'{namespace}/{name}' if namespace else name, 'name': name, 'namespace': namespace,
             'conditions': conditions(resource), 'origin': 'kueue-api'}
     if kind == 'workloads':
-        item.update(queue=token(spec.get('queueName')), cluster_queue=token(status.get('admission', {}).get('clusterQueue')),
+        item.update(uid=token(meta.get('uid')), pending_position=unknown_position(), queue=token(spec.get('queueName')), cluster_queue=token(status.get('admission', {}).get('clusterQueue')),
                     admitted=_condition_bool(item['conditions'], 'Admitted'), finished=_condition_bool(item['conditions'], 'Finished'))
         item['pending_reasons'] = [{'source': 'kueue-condition', 'reason': c['reason'],
                                    'detail': f"{c['type']} is {c['status']}" + (' (current generation).' if c['current_generation'] else ' (generation not confirmed).')}
@@ -359,6 +360,14 @@ def normalize_queue_resource(resource, kind):
 class KueueReader:
     def __init__(self, client=None):
         self.client = client or KubeClient()
+        self.pending = None
+        self.pending_error = None
+        try:
+            targets = configured_targets()
+            if targets is not None:
+                self.pending = PendingVisibilityReader(self.client, targets)
+        except ValueError:
+            self.pending_error = 'Configure 1–10 unique namespace/LocalQueue targets with DAVANO_KUEUE_PENDING_LOCAL_QUEUES.'
 
     def snapshot(self):
         group = self.client.get('/apis/kueue.x-k8s.io')
@@ -375,6 +384,14 @@ class KueueReader:
         output = {'status': 'connected', 'detail': 'Read-only Kueue conditions. Lists are not an atomic scheduling decision.', 'api_version': version}
         for resource, field in (('localqueues', 'local_queues'), ('clusterqueues', 'cluster_queues'), ('workloads', 'workloads')):
             output[field] = [normalize_queue_resource(item, resource) for item in self.client.list(root + '/' + resource)]
+        output['pending_visibility'] = empty_visibility()
+        if self.pending_error:
+            output['pending_visibility'] = empty_visibility('invalid-config', self.pending_error)
+        elif self.pending:
+            try:
+                output['pending_visibility'] = self.pending.snapshot(output['workloads'])
+            except (ApiError, ValueError, TypeError, AttributeError, KeyError):
+                output['pending_visibility'] = empty_visibility('unavailable', 'Optional pending visibility unavailable.')
         return output
 
 
@@ -399,7 +416,8 @@ class ObservabilityService:
                      'stale_after_seconds': STALE_AFTER_SECONDS, 'observation_window_seconds': OBSERVATION_WINDOW_SECONDS,
                      'devices': [], 'adapters': ADAPTERS, 'warnings': [], 'coverage': 'unknown'}
         queues = {'status': 'disabled', 'detail': 'Kueue API observation is opt-in; Pod pending reasons remain available.',
-                  'api_version': None, 'local_queues': [], 'cluster_queues': [], 'workloads': []}
+                  'api_version': None, 'local_queues': [], 'cluster_queues': [], 'workloads': [],
+                  'pending_visibility': empty_visibility()}
         if self.source == 'demo':
             telemetry['detail'] = 'Demo mode has no connected exporter and fabricates no device measurements.'
             queues['detail'] = 'Demo mode has no connected Kueue API.'

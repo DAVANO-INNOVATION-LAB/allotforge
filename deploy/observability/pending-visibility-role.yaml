@@ -1,0 +1,23 @@
+# Unbound review template. Replace namespace/resourceNames for each approved target.
+# Not included in any kustomization. No bindings or controller permissions.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: allotforge-pending-visibility
+  namespace: example-team
+rules:
+- apiGroups: [visibility.kueue.x-k8s.io]
+  resources: [localqueues/pendingworkloads]
+  resourceNames: [example-queue]
+  verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: allotforge-pending-visibility-discovery
+rules:
+- nonResourceURLs:
+  - /apis/visibility.kueue.x-k8s.io
+  - /apis/visibility.kueue.x-k8s.io/v1beta2
+  - /apis/visibility.kueue.x-k8s.io/v1beta1
+  verbs: [get]

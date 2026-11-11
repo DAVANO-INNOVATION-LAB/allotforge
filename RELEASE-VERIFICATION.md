@@ -1,27 +1,21 @@
-# AllotForge 0.3.0 local verification
+# AllotForge 0.4.0 verification
 
-Verified against the 0.3.0 working tree on 2026-11-11 before publication. This file records local verification, not a claim that remote CI or GPU hardware testing has passed.
+Local verification was performed on 2026-11-11 before publication. Remote CI status is recorded against the exact release commit in GitHub Actions, not anticipated here.
 
-## Passed locally
+## Local checks
 
-- Full Python unit/API-double/static-manifest suite: **290 tests passed**.
-- UI DOM/API suite: **143 checks passed** (61 main UI, 27 control, 31 execution/telemetry, 24 assignment/reassignment).
-- Python compilation: `davano` and `benchmarks`.
-- JavaScript syntax: app, features, operations and assignments.
-- Wheel build: `davano-0.3.0-py3-none-any.whl`; the package/import name is retained for compatibility, with an additional `allotforge` command.
-- Independent review of request-accounting changes and release workflow. Malformed GPU-map and CPU-only Pod-condition regressions found during review were fixed and covered by tests.
-- Three labelled static HTML/CSS previews exercise synthetic fit, CPU-blocked and unknown-CPU scenarios. These are not browser QA or live cluster evidence. Preview files are generated artifacts and excluded from the repository source manifest.
-
-The first remote native-admission attempt exposed a pre-existing CRD CEL reserved-field reference. The `namespace` field now uses its required CEL escape, with static and real-API subject allow/deny regression coverage. A second server check exposed an unsupported Pod overhead CEL field. The guard now conservatively disallows RuntimeClass on all new Pods in managed namespaces, with explicit built-in RuntimeClass-admission prerequisites and real-server bypass tests. Publication remains gated on a successful fresh run.
+- Full Python unit/API-double/static-manifest suite: **307 tests passed**.
+- Full UI DOM/API suite: **169 checks passed** (61 main UI, 27 control, 57 execution/telemetry/visibility, 24 assignment/reassignment).
+- Python compilation and all four JavaScript syntax checks passed.
+- Independent review verified the pinned Kueue v0.20.5 contract, including omitted Workload UID and zero-based queue indices. No blocking findings remain.
+- Stage11 labelled static previews cover upstream-style identity-unverified summary entries, partial windows and unavailable visibility. They are synthetic HTML/CSS previews, not browser QA or live Kueue screenshots.
 
 ## Release gates
 
-The release workflow tests Python 3.11/3.12 and UI contracts, runs the existing disposable-kind native-admission/Kustomize checks, then builds exact-commit source and wheel artifacts. Only the publishing job has contents-write permission. It checks the current main head, verifies artifact checksums, refuses an existing tag and creates a development prerelease targeted to that tested commit. Check the exact commit's GitHub Actions result for remote verification; this local record does not anticipate its outcome.
+The release workflow tests Python 3.11/3.12 and UI contracts, runs existing disposable-kind native admission and Kustomize/server checks, then builds exact-commit source and wheel artifacts. Only publishing has contents-write permission. It verifies checksums, checks the main head, refuses existing tags and publishes a development prerelease targeted to the tested SHA.
 
-## Not verified locally
+## Limits
 
-No real GPU, live cluster admission/scheduling, Kueue/KAI runtime, hardware allocation, migration, exporter, production tenancy or competitor platform was exercised. Local Chromium could not start due to environment socket restrictions; the available browser could not open the local app. DOM/API checks and labelled static previews do not certify actual browser layout or interaction behavior. No cloud GPU resources were provisioned, credentials generated or production cluster changed.
+New visibility checks use synthetic transport/API doubles. No live Kueue visibility service, production permission binding, real queue scheduling, exporter or GPU hardware was tested. RuntimeClass restrictions and prerequisites from 0.3.0 remain in force. Existing Kubernetes CI is real API-server validation on a disposable CPU-only kind cluster, not a GPU/Kueue deployment test.
 
-The historical files in `benchmarks/results/` measure the prior 0.2.0 source/fixture and are not fresh performance results for 0.3.0. They establish no GPU speedup. License selection remains pending; no open-source license grant is asserted.
-
-Reproduce with the commands in README.md. Static preview tooling uses optional pinned development dependencies from `web/tests/requirements-render.txt`.
+Local browser interaction/layout remains unverified; DOM/API checks and static previews are not browser certification. Historical CPU benchmark files remain 0.2.0 evidence, not new performance results. No production cluster or GPU resources were provisioned. License selection remains pending.

@@ -1,5 +1,5 @@
 {
-  "created_at": "2026-11-11T21:12:28.223069+00:00",
+  "created_at": "2026-11-11T21:24:57.226428+00:00",
   "files": {
     ".dockerignore": {
       "bytes": 75,
@@ -30,12 +30,12 @@
       "sha256": "27168c0003bb7fe1b99bb6602702fd3a32a7b2a35a239f08522627de6ad52080"
     },
     "README.md": {
-      "bytes": 15964,
-      "sha256": "af77663b41554f53b2b6e42c700563ffc14ba38a42ce482e9129a59988eeef67"
+      "bytes": 16971,
+      "sha256": "48bb4c232d82ff1b914418fdff4899974983012e65f6bc2abf9878f936e15e3c"
     },
     "RELEASE-VERIFICATION.md": {
-      "bytes": 3085,
-      "sha256": "d6c2b29c6ab1dbc27d76acaf6bbd169af7af23da3cbeab53f7b0e9c8685ae59c"
+      "bytes": 1950,
+      "sha256": "8b0990d35e9cca123e325887250fbfd2a112ababdff9c3ee9f94b529e1b54f0e"
     },
     "SECURITY.md": {
       "bytes": 10119,
@@ -79,7 +79,7 @@
     },
     "davano/__init__.py": {
       "bytes": 159,
-      "sha256": "82df718f7c2e272b4b39fe258f333e3a90fb16b8d99d9569c186e3f6d9eb0dd3"
+      "sha256": "25d8444a73f2a114c587fe492dc8ff5db949b1d10dc906f71ba9554f4d26c8bd"
     },
     "davano/allocation_models.py": {
       "bytes": 402,
@@ -118,12 +118,16 @@
       "sha256": "d2519f5cb602e8900cf2b5033f7d9f23aaa2f13c47fcf30d1b1db39f79c20dd5"
     },
     "davano/observability.py": {
-      "bytes": 25369,
-      "sha256": "cbdd075f0d39d3dc8f097c803e89567e7e68fbf52d94c885eb09caf49d5ed6b8"
+      "bytes": 26516,
+      "sha256": "ac3af418e1642c5d5bbbb77aa076c59508acebede0cd45e58649d397f85fcdc7"
     },
     "davano/operator.py": {
       "bytes": 6658,
       "sha256": "d6b1249ebd225449d6b0e046e1de33a1a1d83c95cc5fa03836555a8147a9bee8"
+    },
+    "davano/pending_visibility.py": {
+      "bytes": 9714,
+      "sha256": "cda1b36a42e3c2d3f16ede4d0d9bc4ab57b8223a28fe79db823b23e1ea758af4"
     },
     "davano/quantities.py": {
       "bytes": 1587,
@@ -253,6 +257,10 @@
       "bytes": 2133,
       "sha256": "40790fbb5874309641e1180e7221aa05dc79246c126fcd1d5cfc8c1b982c6a65"
     },
+    "deploy/observability/pending-visibility-role.yaml": {
+      "bytes": 713,
+      "sha256": "943ad2a1fa5c7b33359cd9edd51a7ffefb51b63c079ee393fede83b2cfa2fbc5"
+    },
     "deploy/observability/queue-observer-clusterrole.yaml": {
       "bytes": 531,
       "sha256": "6cd82c6d916d67954d4e30542e4dbcfe5338ab213f1205e4776040219742d81c"
@@ -350,12 +358,12 @@
       "sha256": "065f54612f304987d4370337cd044fecfdcaf7e512a3da3983aba654261b5b25"
     },
     "docs/api-contract.md": {
-      "bytes": 21261,
-      "sha256": "e34a986e57edb5e9f4f411fbf0c5c7c0d58505f0d8ee6d3062b1113873e2107a"
+      "bytes": 22583,
+      "sha256": "3f20a503710f8f60b6c4113b9d6ff33239958a385fa2e145823bc7cb6ba94a4b"
     },
     "docs/capabilities.md": {
-      "bytes": 16891,
-      "sha256": "9f1a3a9ca8b1f9ec26bb6694df0c26efd3c79a7352d4d40223c533fabc9a6b6d"
+      "bytes": 17057,
+      "sha256": "d85ff1c16dd59f7ebd64dfcbc64e3ef906b04f331d6070d40a721455936c1813"
     },
     "docs/constrained-execution.md": {
       "bytes": 10937,
@@ -370,8 +378,8 @@
       "sha256": "dac587156a85239738e0a474a2008130fd11bf8329886dc4223969277e78e02f"
     },
     "docs/observability.md": {
-      "bytes": 10002,
-      "sha256": "c92caa3ddcf91bf573b7ed109fee8f32cde96c419e83a906f70d043c5131391c"
+      "bytes": 17280,
+      "sha256": "15d2aa5937ae468973dcbfc4ed2823b7c8265b8774d177b2833ad6c9eb24667f"
     },
     "docs/ray-kueue.md": {
       "bytes": 11878,
@@ -380,6 +388,10 @@
     "docs/releases/0.3.0.md": {
       "bytes": 2020,
       "sha256": "69fde440cceca5bca23a22ba7d3e45ac986a41096cb57f89a116736bde487fe2"
+    },
+    "docs/releases/0.4.0.md": {
+      "bytes": 1672,
+      "sha256": "c3e350dea52f45c8bbf8a2fa54f2617b9050aca24c7f50070525a39e09f22a42"
     },
     "docs/resource-assignment.md": {
       "bytes": 8560,
@@ -403,7 +415,7 @@
     },
     "pyproject.toml": {
       "bytes": 651,
-      "sha256": "b3eed421d5eb6b4a9522a78275b8763d63227b5b5f1f99c4f3522a4906a24b11"
+      "sha256": "fb5caa4aa457e4868c047f5185027beba4cb936b50d192a39c09857a22b965b9"
     },
     "requirements-dev.txt": {
       "bytes": 67,
@@ -461,6 +473,10 @@
       "bytes": 5384,
       "sha256": "70fce3396877aa54f90069cd60cf2e7a0f8ca1c6c7953110bf48b934ab65cf18"
     },
+    "tests/test_pending_visibility.py": {
+      "bytes": 12701,
+      "sha256": "7d8843cf539b6f3be98712f1836f6010d334a87f446aa78f510df8d345880dec"
+    },
     "tests/test_ray_integration.py": {
       "bytes": 15875,
       "sha256": "3c6d45184a743a49a335b5049cb3e0a4a68287fe8c155eb2d57ec2477fc45cf0"
@@ -487,23 +503,23 @@
     },
     "web/index.html": {
       "bytes": 2655,
-      "sha256": "5b8eaefeab2ebf344e673ec94a9ecfa6966c896f5b9cd85dec52bda97074e823"
+      "sha256": "f7e7c6c4a9839529828cd46693b341b017a5b6d7db5351cc04f72ba54ece2292"
     },
     "web/operations.js": {
-      "bytes": 30020,
-      "sha256": "aa13d0de6d9ce9ea080e56489d369c65b3302f98136a2c10577d53d8f633dae8"
+      "bytes": 34323,
+      "sha256": "8a7788dedb0a51bd0228e543e8b3be3ea38857ebb6d825ec110c8558c78f61fe"
     },
     "web/package-lock.json": {
       "bytes": 18599,
-      "sha256": "d5ec1a359db0db716c8123105f487c0bc13f189e86de955400004dea9a4b95cb"
+      "sha256": "f2542295ab04182a87c98a40e0ba1c6b8e107a806b591b89232b1b7bb9e607ff"
     },
     "web/package.json": {
       "bytes": 506,
-      "sha256": "2a296e02a9fb1978eae0f3c1ed8272df53acd79c14cb773cd70fb95c0f2d81bf"
+      "sha256": "9e94f704afda865705ba3a404fee8f5b95de7cbce3441f65998645c5fa848a6b"
     },
     "web/styles.css": {
-      "bytes": 35578,
-      "sha256": "394925f75e9cab939e8d88b6cf90e655a4a7c08fcdd4936b19beb3f5e7c8d67a"
+      "bytes": 38247,
+      "sha256": "c71c2e73d40a7bc984ad6c71b1aaee713a87a5409bbd6d3f7040c98d9d889466"
     },
     "web/tests/GAP-VALIDATION.md": {
       "bytes": 2975,
@@ -522,8 +538,8 @@
       "sha256": "df3986478201ef04d01150a958aa11d5e17a396715ee1c5ab9835febb5d48365"
     },
     "web/tests/operations.test.cjs": {
-      "bytes": 17592,
-      "sha256": "245cbba8b3b494d7eefa3a3c5487d910319d3ca7d8f01b59b40b7f665dad997a"
+      "bytes": 25372,
+      "sha256": "104aa6b4899d64914e2387fdca8de3c965bc56c2db06e17c78a62a057a1d6ce2"
     },
     "web/tests/render-gap-previews.py": {
       "bytes": 1777,
@@ -532,6 +548,10 @@
     "web/tests/render-previews.py": {
       "bytes": 6917,
       "sha256": "b181030b69b1409a44dae87c2a395fdcfd2563ebfdb2185e8f252c2b08c41f95"
+    },
+    "web/tests/render-queue-previews.py": {
+      "bytes": 1293,
+      "sha256": "d0fd224ccfe7373751ec83e3b94786c9853a70fa5644891fe773bf5e08c3b859"
     },
     "web/tests/render-static.cjs": {
       "bytes": 2854,

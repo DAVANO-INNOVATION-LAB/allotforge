@@ -1,10 +1,10 @@
 # AllotForge
 
-**Provision resources with evidence, not guesswork.**
+**Plan resources with evidence, not guesswork.**
 
 AllotForge is the new product name for this GPU resource console. The existing `davano` Python module, `DAVANO_*` configuration variables, `davano.dev/*` labels and `fleet.davano.io` CRDs remain supported unchanged for upgrade compatibility. The new `allotforge` command starts the same application.
 
-AllotForge combines GPU resource inventory, local advisory pools and policy, RayJob manifest planning, optional exporter/queue observation, and separately enabled Kubernetes control, namespace GPU-ceiling edits and constrained Job execution/reassignment. The UI and API run together. Version **0.3.0 is a development prototype**, not a production-certified GPU platform. License selection is pending.
+AllotForge combines GPU resource inventory, local advisory pools and policy, RayJob manifest planning, optional exporter/queue observation, and separately enabled Kubernetes control, namespace GPU-ceiling edits and constrained Job execution/reassignment. The UI and API run together. Version **0.4.0 is a development prototype**, not a production-certified GPU platform. License selection is pending.
 
 **The default is synthetic demo data with no cluster credentials or cluster writes.** Live inventory is read-only. Cluster mutation requires separate opt-in configuration and permissions; installing the inventory console does not install its operator. No live GPU cluster, device exporter or competitor platform was exercised in this build.
 
@@ -42,7 +42,7 @@ The fixture has 36 labelled whole-GPU resource units and a separate shared-repli
 | --- | --- | --- |
 | Inventory and local workspace | Kubernetes-shaped demo, optional Node/Pod reads, SQLite pools/policies, GPU/CPU/memory request accounting and explainable single-node fit checks | Demo by default. Local policy remains advisory and does not reserve resources. |
 | Ray planning | Validated suspended RayJob export plus pure Kueue manifest builders | Planning only; no live RayJob submission or Ray lifecycle management. |
-| Observability | Pod pending reasons, optional read-only Kueue conditions and selected NVIDIA/AMD Prometheus metrics | External sources off by default. Missing, stale or conflicting evidence remains unknown; Intel telemetry unsupported. |
+| Observability | Pod pending reasons, optional read-only Kueue conditions, scoped pending-summary observations and selected NVIDIA/AMD Prometheus metrics | External sources off by default. Missing, stale or conflicting evidence remains unknown; Intel telemetry unsupported. |
 | Managed control | GPUPool/GPUAccessPolicy CRDs and a separate controller for owned Kueue queues, quota and native admission guards | Control API off by default; separate operator installation and consequential RBAC required. No automatic tenant workload grants. |
 | Project execution | Project-scoped preview, submission, observation, cancellation and local audit for constrained single-Pod Kubernetes Jobs | Off by default. Administrator-approved digest-pinned images and fixed commands only; not arbitrary code or Pod-template submission. |
 | Resource assignment | Administrator GPU quota/per-Pod ceiling edits and queued-Job replacement within or across authorized projects | Off by default. Same-pool policy edits only; workload changes cancel and recreate an eligible suspended Job, not live migration. |
@@ -63,6 +63,10 @@ The **Resource assignment** view edits a managed namespace's GPU quota and per-P
 In **Workload launch**, an eligible suspended broker-owned Job can be reassigned to an authorized target project, including its different configured namespace/pool, or replaced with different approved GPU/profile settings in the same project. CPU and memory come from the selected approved profile. The reviewed operation reserves a new target name, cancels the source, waits for the Job and owned Pod/Kueue children to disappear, then submits the target. This is **non-atomic cancel-and-recreate**, with explicit status/resume, not migration. Running/admitted workloads are blocked; uncertain source deletion can require administrator review without a target submission.
 
 See [resource-assignment semantics and recovery](docs/resource-assignment.md). These paths are tested with local API doubles, not a real scheduling or GPU-movement demonstration.
+
+## Observe bounded pending-queue evidence
+
+The queue view can separately observe up to ten explicitly configured LocalQueue pending windows. It shows the API-reported zero-based positions as **identity-unverified summary entries**, never an ETA or guaranteed admission order. Stock Kueue omits Workload UID from these summaries, so they remain separate from actual Workload admission records. Missing, malformed, partial or unauthorized evidence stays explicit. No new role is automatically bound. See [configuration, identity limits and read permissions](docs/observability.md#bounded-pending-workload-visibility).
 
 ## Kubernetes/OpenShift
 
@@ -103,6 +107,8 @@ In-cluster inventory uses standard `KUBERNETES_SERVICE_HOST`, `KUBERNETES_SERVIC
 | `DAVANO_PROMETHEUS_TOKEN_PATH` / `DAVANO_PROMETHEUS_CA` | Optional credential file and custom CA for Prometheus |
 | `DAVANO_PROMETHEUS_CLUSTER` | Optional exact cluster label selector; needed for safe labelled/federated node association |
 | `DAVANO_QUEUE_OBSERVABILITY_ENABLED` | `false`; live read-only Kueue API discovery and queue/workload conditions, requires extra read RBAC |
+| `DAVANO_KUEUE_PENDING_VISIBILITY_ENABLED` | `false`; separately enables bounded LocalQueue pending-summary reads when basic queue observation is enabled |
+| `DAVANO_KUEUE_PENDING_LOCAL_QUEUES` | No default; 1–10 explicit `namespace/queue` targets, comma-separated, with separately reviewed GET-only RBAC |
 
 When project execution is enabled, unscoped inventory, advisory, Ray-planning and observability routes require the separate administrator bearer token. Project tokens do not unlock those routes. An absent/short administrator token leaves them inaccessible rather than public. Public capability-status routes contain no project credentials. Keep all modes private behind reviewed TLS/authentication.
 
@@ -123,6 +129,7 @@ curl http://127.0.0.1:8080/api/v1/execution/status
 
 - [API contract and authentication boundaries](docs/api-contract.md)
 - [GPU, CPU and memory advisory fit](docs/resource-fit.md)
+- [0.4.0 release notes](docs/releases/0.4.0.md)
 - [0.3.0 release notes](docs/releases/0.3.0.md)
 - [Managed control plane](docs/control-plane.md)
 - [Constrained project execution](docs/constrained-execution.md)

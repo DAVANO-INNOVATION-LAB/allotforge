@@ -1,6 +1,6 @@
 # Capabilities and ownership boundaries
 
-This document describes the **0.3.0 implementation**, including code paths that are disabled by default. It is not evidence of deployment, GPU execution, production safety or comparative performance. The default app uses labelled synthetic inventory; no cluster credentials, operator, execution access or exporter connection are enabled automatically.
+This document describes the **0.4.0 implementation**, including code paths that are disabled by default. It is not evidence of deployment, GPU execution, production safety or comparative performance. The default app uses labelled synthetic inventory; no cluster credentials, operator, execution access or exporter connection are enabled automatically.
 
 ## Implemented capabilities and authority
 
@@ -16,7 +16,7 @@ This document describes the **0.3.0 implementation**, including code paths that 
 | Namespace allocation edits | Opt-in desired GPU ceilings | Administrator preview/apply of same-pool namespace GPU quota and per-Pod cap, with UID/resourceVersion concurrency checks. No reservation, atomic transfer or existing-Pod resize. |
 | Queued workload reassignment | Opt-in cancel-and-recreate | Replace eligible broker-owned queued Jobs within/across authorized projects, with target-name reservation and durable operation state. No running/admitted-job migration. |
 | Pod pending diagnostics | Read-only observation | Sanitized Pod conditions and waiting reasons; Pending alone does not prove GPU exhaustion. |
-| Kueue queue observation | Read-only, opt-in | Discovers a supported served API version and reads LocalQueue, ClusterQueue and Workload status. |
+| Kueue queue observation | Read-only, opt-in | Discovers a served API and reads conditions. Separately enabled scoped pending-summary windows preserve identity uncertainty and never predict admission times. |
 | GPU telemetry | Read-only, opt-in adapters | Selected NVIDIA DCGM and AMD exporter metrics through Prometheus; no real hardware validation, Intel telemetry unsupported. |
 | Benchmarks | Scoped measurement tooling | Local CPU smoke results, offline batch adapters and bounded HTTP inference measurements; no included live GPU or competitor run. |
 | MIG/sharing reconfiguration, Slurm, provisioning | Unsupported | No driver/device-plugin changes, MIG layout changes, Slurm control, cluster provisioning or autoscaling. |
@@ -48,7 +48,7 @@ A fit result means an eligible single node passes the implemented GPU-count/loca
 
 ## Managed control is not global isolation
 
-The separate controller manages `fleet.davano.io/v1alpha1` GPUPool and GPUAccessPolicy CRDs and UID-owned Kueue ResourceFlavor/ClusterQueue/LocalQueue, ResourceQuota and ValidatingAdmissionPolicy/binding resources. It uses protected node-label selectors, namespace allowlists, resource-version/precondition checks, finalizers and Lease leadership fencing. It does not mutate node labels, device plugins or existing GPU layouts. These paths have local API-double/static tests, not verified cluster behavior.
+The separate controller manages `fleet.davano.io/v1alpha1` GPUPool and GPUAccessPolicy CRDs and UID-owned Kueue ResourceFlavor/ClusterQueue/LocalQueue, ResourceQuota and ValidatingAdmissionPolicy/binding resources. It uses protected node-label selectors, namespace allowlists, resource-version/precondition checks, finalizers and Lease leadership fencing. It does not mutate node labels, device plugins or existing GPU layouts. These paths have local API-double/static tests and a disposable Kubernetes 1.31 API-server admission/deployment CI gate. This does not verify real Kueue scheduling or GPU execution.
 
 The default control model deliberately **does not grant tenant workload RBAC**. Policy `subjects` do not receive permissions. `GPUAccessPolicy Ready` remains false with `WorkloadGrantsDisabled`; `GuardrailsReady` separately describes current-generation dependency observation. It is not proof of CEL cache activation, CNI enforcement, real scheduler behavior or production tenancy. The constrained execution broker is a separate entry point and does not change that status into a tenant-RBAC grant.
 

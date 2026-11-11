@@ -1,4 +1,4 @@
-# AllotForge API v1 (0.3.0 development prototype)
+# AllotForge API v1 (0.4.0 development prototype)
 
 Responses use JSON. OpenAPI at `/openapi.json` and `/docs` describes current input schemas. Inputs reject unknown fields and constrain identifiers/counts. Mutating requests must be same-origin and bounded to 64 KiB; POST/PUT/PATCH require `application/json`. These checks are not a substitute for authentication.
 
@@ -33,7 +33,7 @@ An abbreviated **synthetic demo** response is:
     "observed_at": "<inventory observation timestamp>",
     "read_only_cluster": true,
     "enforcement": "advisory-only",
-    "version": "0.3.0"
+    "version": "0.4.0"
   },
   "summary": {
     "nodes": 6,
@@ -105,13 +105,21 @@ The HTTP planner supports whole-GPU local pools; pure Python builders additional
 
 - `source`, `observed_at`, `read_only: true`.
 - `telemetry`: `status`, `detail`, `devices`, `adapters`, `warnings`, `coverage`, `stale_after_seconds` and `observation_window_seconds`.
-- `queues`: independent `status`, `detail`, selected `api_version`, `local_queues`, `cluster_queues` and `workloads`.
+- `queues`: independent `status`, `detail`, selected `api_version`, `local_queues`, `cluster_queues`, `workloads` and separately optional `pending_visibility`.
 
 External observation is off by default and never synthesized in demo mode. Prometheus requires an explicitly configured HTTPS origin in live mode; queue reads require an explicit flag and separate read RBAC. Optional-source errors do not erase successful inventory. Statuses distinguish `disabled`, `invalid-config`, `unavailable` and, for successful telemetry reads, `connected` or `no-data`.
 
 Each exporter entity preserves UUID evidence, node-match result, vendor, entity kind and provenance. Each metric has `value`, `unit`, `status`, `sample_at`, `source_metric`, `scope` and `reason`. Only accepted fresh evidence has a numeric value. Stale/unknown/conflicting values are `null`, not zero. Freshness uses source scrape timestamps, with a 120-second threshold and a bounded 15-minute query window; collection time is not scrape time. Coverage and runtime exporter versions remain unknown.
 
 Queue admission/active/finished booleans require current observed-generation conditions; missing/stale evidence is `null`. No heuristic Pod-to-Workload identity join or claim of actual GPU execution is made. See [observability](observability.md) for exporter versions, metric conversions, permissions and unsupported fields.
+
+### Optional pending visibility
+
+`queues.pending_visibility` has `status`, `detail`, `api_version`, `observed_at`, `limit=100`, `offset=0` and configured `targets`. Each target reports namespace/name, observation status/time, `returned_count`, `coverage` and `reported_entries`. Returned count is the response window size, not total backlog. A full window is partial; no continuation or completeness claim is made.
+
+Each reported entry exposes only namespace/name, zero-based local/cluster queue positions, source/time, `position_base=0` and `identity_status=unverified`. These are literal API summary observations, never linked to Workload actions/admission. Stock Kueue v0.20.5 omits Workload UID; matching names or owner UIDs cannot identify the current Workload.
+
+Workload rows have an independently validated `uid` and `pending_position`. Bound positions stay unknown unless one exact UID/name/namespace/queue match and current negative admission/reservation conditions corroborate the separate read. Positive matching-UID cases in tests are synthetic, not a stock-upstream guarantee. Optional errors preserve basic queue observations. See [the complete visibility contract](observability.md#bounded-pending-workload-visibility) for call/time/size limits and configuration.
 
 ## Optional managed control API
 
