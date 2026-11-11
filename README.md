@@ -4,7 +4,7 @@
 
 AllotForge is the new product name for this GPU resource console. The existing `davano` Python module, `DAVANO_*` configuration variables, `davano.dev/*` labels and `fleet.davano.io` CRDs remain supported unchanged for upgrade compatibility. The new `allotforge` command starts the same application.
 
-AllotForge combines GPU resource inventory, local advisory pools and policy, RayJob manifest planning, optional exporter/queue observation, and separately enabled Kubernetes control, namespace GPU-ceiling edits and constrained Job execution/reassignment. The UI and API run together. Version **0.6.0 is a development prototype**, not a production-certified GPU platform. License selection is pending.
+AllotForge combines GPU resource inventory, local advisory pools and policy, RayJob manifest planning, optional exporter/queue observation, and separately enabled Kubernetes control, namespace GPU-ceiling edits and constrained Job execution/reassignment. The UI and API run together. Version **0.7.0 is a development prototype**, not a production-certified GPU platform. License selection is pending.
 
 **The default is synthetic demo data with no cluster credentials or cluster writes.** Live inventory is read-only. Cluster mutation requires separate opt-in configuration and permissions; installing the inventory console does not install its operator. No live GPU cluster, device exporter or competitor platform was exercised in this build.
 
@@ -43,7 +43,7 @@ The fixture has 36 labelled whole-GPU resource units and a separate shared-repli
 | --- | --- | --- |
 | Inventory and local workspace | Kubernetes-shaped demo, optional Node/Pod reads, SQLite pools/policies, GPU/CPU/memory request accounting and explainable single-node fit checks | Demo by default. Local policy remains advisory and does not reserve resources. |
 | Ray planning | Validated suspended RayJob export plus pure Kueue manifest builders | Planning only; no live RayJob submission or Ray lifecycle management. |
-| Workload advisor | All-Pod request monitoring and optional runtime-bound CPU/memory/GPU evidence, with a controlled CPU comparison checklist | Read-only and off by default. Requires a custom attribution adapter; no automatic placement or measured speed/cost claims. |
+| Workload advisor | All-Pod request monitoring, optional current-container cAdvisor CPU/memory observations, or separately configured custom CPU/memory/GPU evidence | Read-only and off by default. cAdvisor requires preserved source timestamps and cannot advise CPU versus GPU. GPU attribution still needs a trusted custom adapter. |
 | Observability | Pod pending reasons, optional read-only Kueue conditions, scoped pending-summary observations and selected NVIDIA/AMD Prometheus metrics | External sources off by default. Missing, stale or conflicting evidence remains unknown; Intel telemetry unsupported. |
 | Deployment diagnostics | On-demand bounded inventory reads, dependency API discovery and a fixed constant Prometheus query | Demo makes no external requests. Live diagnostics always require an administrator token; no aggregate readiness or enforcement claim. |
 | Managed control | GPUPool/GPUAccessPolicy CRDs and a separate controller for owned Kueue queues, quota and native admission guards | Control API off by default; separate operator installation and consequential RBAC required. No automatic tenant workload grants. |
@@ -73,7 +73,7 @@ The queue view can separately observe up to ten explicitly configured LocalQueue
 
 ## Monitor workloads before choosing CPU or GPU
 
-The **Workload advisor** separates CPU/RAM/GPU requests from measured runtime activity for every observed Pod, including CPU-only jobs. An optional, administrator-supplied Prometheus adapter must bind measurements to the current Pod UID and container runtime ID. Only sufficiently fresh, aligned observations can suggest a controlled CPU comparison. Device-wide GPU signals, workload names and resource requests alone never establish which processor is better. Cost and performance remain unknown until matched trials are measured; no workload is automatically moved. See the [adapter contract, coverage gates and experiment checklist](docs/workload-advisor.md).
+The **Workload advisor** separates CPU/RAM/GPU requests from measured runtime activity for every observed Pod, including CPU-only jobs. The optional [cAdvisor CPU/memory source](docs/cadvisor-cpu-memory.md) matches current Pod and container identities in full cgroup paths and requires an explicitly asserted timestamp-preserving pipeline. That mode leaves GPU activity and processor suitability unknown. The separate custom-adapter mode can suggest a controlled CPU comparison only from sufficiently fresh, aligned CPU/GPU evidence. Device-wide GPU signals, workload names and resource requests alone never establish which processor is better. Cost and performance remain unknown until matched trials are measured; no workload is automatically moved. See the [adapter contract, coverage gates and experiment checklist](docs/workload-advisor.md).
 
 ## Kubernetes/OpenShift
 
@@ -113,7 +113,9 @@ In-cluster inventory uses standard `KUBERNETES_SERVICE_HOST`, `KUBERNETES_SERVIC
 | `DAVANO_PROMETHEUS_URL` | Unset; opt-in verified HTTPS Prometheus origin in live mode |
 | `DAVANO_PROMETHEUS_TOKEN_PATH` / `DAVANO_PROMETHEUS_CA` | Optional credential file and custom CA for Prometheus |
 | `DAVANO_PROMETHEUS_CLUSTER` | Optional exact cluster label selector; needed for safe labelled/federated node association |
-| `DAVANO_WORKLOAD_ADVISOR_ENABLED` | `false`; optional runtime-attributed workload metrics from the documented custom Prometheus adapter, never stock device metrics |
+| `DAVANO_WORKLOAD_ADVISOR_ENABLED` | `false`; optional workload observations under the selected source contract, never device-to-container relabeling |
+| `DAVANO_WORKLOAD_METRICS_SOURCE` | `custom-adapter`; choose `cadvisor-cpu-memory` for the separate CPU/RAM-only source |
+| `DAVANO_CADVISOR_TIMESTAMPS_PRESERVED` | `false`; cAdvisor requires explicit administrator assertion of preserved original timestamps before any source query |
 | `DAVANO_QUEUE_OBSERVABILITY_ENABLED` | `false`; live read-only Kueue API discovery and queue/workload conditions, requires extra read RBAC |
 | `DAVANO_KUEUE_PENDING_VISIBILITY_ENABLED` | `false`; separately enables bounded LocalQueue pending-summary reads when basic queue observation is enabled |
 | `DAVANO_KUEUE_PENDING_LOCAL_QUEUES` | No default; 1–10 explicit `namespace/queue` targets, comma-separated, with separately reviewed GET-only RBAC |
@@ -137,6 +139,7 @@ curl http://127.0.0.1:8080/api/v1/execution/status
 
 - [API contract and authentication boundaries](docs/api-contract.md)
 - [GPU, CPU and memory advisory fit](docs/resource-fit.md)
+- [0.7.0 candidate notes](docs/releases/0.7.0.md)
 - [0.6.0 release notes](docs/releases/0.6.0.md)
 - [0.5.0 release notes](docs/releases/0.5.0.md)
 - [Deployment diagnostics](docs/deployment-diagnostics.md)
@@ -149,6 +152,7 @@ curl http://127.0.0.1:8080/api/v1/execution/status
 - [Observability sources and limitations](docs/observability.md)
 - [Benchmark methodology and actual results](benchmarks/README.md)
 - [Offline GPU smoke verification](benchmarks/README.md#offline-gpu-smoke-evidence) and [future collector acceptance tests](docs/gpu-validation.md)
+- [cAdvisor CPU/memory configuration and limits](docs/cadvisor-cpu-memory.md)
 
 Local `/pools` and `/policies` mutate only SQLite. Managed `/control/*` routes are a separate authority. `/evaluate` and `/ray/plan` never submit; the explicitly enabled `/execution/*` API can create real Jobs. Submission is not admission, allocation or successful GPU execution.
 

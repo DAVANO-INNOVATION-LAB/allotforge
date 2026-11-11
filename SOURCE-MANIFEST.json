@@ -1,5 +1,5 @@
 {
-  "created_at": "2026-11-11T22:46:54.863942+00:00",
+  "created_at": "2026-11-11T23:08:36.377028+00:00",
   "files": {
     ".dockerignore": {
       "bytes": 75,
@@ -30,16 +30,16 @@
       "sha256": "27168c0003bb7fe1b99bb6602702fd3a32a7b2a35a239f08522627de6ad52080"
     },
     "README.md": {
-      "bytes": 19039,
-      "sha256": "2b0577aa5ea93bc7d8e4a7e41e3af918abf7d6611503b73c167a64f9c7556bd1"
+      "bytes": 19685,
+      "sha256": "c813f8aa004c20847858188cc566ece57077e8ea9c8569a08310fd2fd8fcebc2"
     },
     "RELEASE-VERIFICATION.md": {
-      "bytes": 2816,
-      "sha256": "2d6d10679b33e19e141e11e69a9356d1ec76c34ab1b0754470eb30c83f446a7d"
+      "bytes": 3137,
+      "sha256": "bb5894f2de5e96162a833915dfcc3bbfac8ff27bfd1a60746049071e5948c512"
     },
     "SECURITY.md": {
-      "bytes": 11762,
-      "sha256": "c2e37e217a0a180e003e2cfaa5e8ab499b0e14cb3e4ec4dc2bd6585ba3895317"
+      "bytes": 12406,
+      "sha256": "e35aad5d4c56ace2d10947800d580b6d52b25257f28a43bba6e5f5ef28d23fcb"
     },
     "benchmarks/README.md": {
       "bytes": 20967,
@@ -83,7 +83,7 @@
     },
     "davano/__init__.py": {
       "bytes": 159,
-      "sha256": "353fd70a7965d3d1012010c171e163d0147eab33e49356503a35f021e60180e3"
+      "sha256": "bc4fe5f079d3d616c24ea425a042919f44bf1b46b7628ac4e6dcfd050b9794e5"
     },
     "davano/allocation_models.py": {
       "bytes": 402,
@@ -96,6 +96,10 @@
     "davano/app.py": {
       "bytes": 7580,
       "sha256": "9ecf5230c81aef2dd25298d49ed1486f34fb3e547b9f9c028ee1b198d186faae"
+    },
+    "davano/cadvisor.py": {
+      "bytes": 9747,
+      "sha256": "c78da824de8192dfe6d3693f374a2b086040de480be0737f6546d78e96c10572"
     },
     "davano/compute.py": {
       "bytes": 6319,
@@ -158,8 +162,8 @@
       "sha256": "f6037c31019855e6eab95db07bbaf3da55db457a61b60c1cdf58948c4e554443"
     },
     "davano/workload_advisor.py": {
-      "bytes": 21173,
-      "sha256": "6680e2b872b397234a6d3495a71fc2be8ab9a679bc204699d72bac3884dc2975"
+      "bytes": 27447,
+      "sha256": "b2140fd05d8c483ff1c637dd85d7b9e9e2c22e2d1197e01b569a290ba4b171e0"
     },
     "davano/workload_api.py": {
       "bytes": 10193,
@@ -370,12 +374,16 @@
       "sha256": "065f54612f304987d4370337cd044fecfdcaf7e512a3da3983aba654261b5b25"
     },
     "docs/api-contract.md": {
-      "bytes": 25804,
-      "sha256": "986c594fd92daccc78082e731957a17c27abc79affec78c7174f30afcc5b19cf"
+      "bytes": 26369,
+      "sha256": "8bf5d166ebee09c3ba183850a192bb6ecc2c8afe48630ea35eef40ec07fda2d3"
+    },
+    "docs/cadvisor-cpu-memory.md": {
+      "bytes": 9698,
+      "sha256": "30acef591c5a44d2103e02194c0d137fea900e3f693380dc74642e9c047bb234"
     },
     "docs/capabilities.md": {
-      "bytes": 18589,
-      "sha256": "e57b2cfd90ac3f26db94d420f69a180096579700a85068140109f4c121aae629"
+      "bytes": 18858,
+      "sha256": "22526024b013cf4195423897a033fa00f4b23c13a0fb503edd44294967af3833"
     },
     "docs/constrained-execution.md": {
       "bytes": 10937,
@@ -394,8 +402,8 @@
       "sha256": "dac587156a85239738e0a474a2008130fd11bf8329886dc4223969277e78e02f"
     },
     "docs/gpu-validation.md": {
-      "bytes": 9711,
-      "sha256": "2a2e1e53d7a0376ded190626156f75b20b4b3714881b2c6368bcb06684b5eaa9"
+      "bytes": 10094,
+      "sha256": "34dd480aa985b92681bd86a44fb4b1ec245f9bc173802f4161c524edb0ac9aa2"
     },
     "docs/observability.md": {
       "bytes": 17280,
@@ -421,6 +429,10 @@
       "bytes": 2811,
       "sha256": "6517c36945874876a6f7e59b819459df97f5d792d1fafd59b47fc34f29c39a9b"
     },
+    "docs/releases/0.7.0.md": {
+      "bytes": 3225,
+      "sha256": "b176438785aa95e2f048cd89e8550dcf96d93c5e7a04b3281e7314ae12536414"
+    },
     "docs/resource-assignment.md": {
       "bytes": 8560,
       "sha256": "757782e0cf253e18ec56bf255f829fc1e6ad7ca09a145d5bef4570fd177029b0"
@@ -438,8 +450,8 @@
       "sha256": "3a257c8dc859378d9663001ca6b5935f7c5abba8237725d53af55f682c24016b"
     },
     "docs/workload-advisor.md": {
-      "bytes": 9474,
-      "sha256": "04fc5892e242b7d28a9304ba55f76056efe99197b27829db6e73cdf1faadc9ba"
+      "bytes": 10121,
+      "sha256": "f63d6af7d21ab5719a93c261c5cc3229acf1a6316c3516adbfbe48e678f3782e"
     },
     "fixtures/cluster.json": {
       "bytes": 13177,
@@ -447,7 +459,7 @@
     },
     "pyproject.toml": {
       "bytes": 651,
-      "sha256": "78c958682b776ffa4e30d6220df3bc9d454c7ce096fa2d15a6e4f5aebfcee35d"
+      "sha256": "03843faf8d42a026c3cff302d07e6f78b594167a89062ee63f1064fdd94319cd"
     },
     "requirements-dev.txt": {
       "bytes": 67,
@@ -472,6 +484,10 @@
     "tests/test_benchmark_harness.py": {
       "bytes": 10198,
       "sha256": "213ec545f6247cbd87279535c66d04c2b2a7f6087c0c54ca3ebdf190916fa019"
+    },
+    "tests/test_cadvisor.py": {
+      "bytes": 37360,
+      "sha256": "2a0ff9a218269d28036cc0ffe4da6c2f85cddebd65d01318739bd70687b5708d"
     },
     "tests/test_compute_fit.py": {
       "bytes": 8965,
@@ -555,7 +571,7 @@
     },
     "web/index.html": {
       "bytes": 2811,
-      "sha256": "c193502631af42337dcab947771968a23ce5fafb7940ca772083dc6702576d45"
+      "sha256": "f87946100a0a9ce6a1f3050304ff4b4c767e767aaa26abeca9eb227d034cd7c3"
     },
     "web/operations.js": {
       "bytes": 34323,
@@ -563,11 +579,11 @@
     },
     "web/package-lock.json": {
       "bytes": 18599,
-      "sha256": "51cf81e45c26f5a67c7be5e03ab257674d85dde9f04f05ee94a5197252a2abc1"
+      "sha256": "f30456520721768109c4a93bec22d3a1b9e01fd6412a53ffb1cc52141ce5eb63"
     },
     "web/package.json": {
       "bytes": 708,
-      "sha256": "0302c2340075676151f253fbaac059c5304dd0b62d71fd4e584830d5a7f86899"
+      "sha256": "ce2130e2b0b1781fe6378f241c7330a603292eee5f0b066443614d5205fb57c2"
     },
     "web/styles.css": {
       "bytes": 44072,
@@ -630,16 +646,16 @@
       "sha256": "ad7c54aee1e47fefd83363eae67ad92ea5183711d3ba5d4a558df019c3609d38"
     },
     "web/tests/workload-advisor.test.cjs": {
-      "bytes": 11763,
-      "sha256": "fc4295663190a458b84ad003c4a03ea636a4d1406aa8676a5b4171732eeb6c85"
+      "bytes": 25665,
+      "sha256": "5ad8fe47796f28cc4fa2393e4014ec2457113218cc34c451a4257d48c7c8369a"
     },
     "web/workload-advisor.css": {
-      "bytes": 4080,
-      "sha256": "a1561c37e7a01f0630f4df7f22e5c1156093ce07c5195e585500bd7e6dc8d2fe"
+      "bytes": 4459,
+      "sha256": "390f1dad37f39e2ad3b74b016ada712f7510e272ac4cd3c64e8920d1519ea548"
     },
     "web/workload-advisor.js": {
-      "bytes": 10174,
-      "sha256": "070545a64454119eefd3cc0628c1a87726b1d6a2b2d31ff4aded8caa117f1332"
+      "bytes": 15038,
+      "sha256": "d538114ad9cbb718e520e4bd91fa1ba3b9136faf7c20b831eaf726d437d557aa"
     }
   },
   "notes": "Source file hashes exclude this self-referential manifest and ignored generated artifacts."

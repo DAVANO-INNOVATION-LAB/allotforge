@@ -35,6 +35,8 @@ This is a source-semantics assessment, not a claim that these tools are defectiv
 
 A CPU/RAM-only CRI adapter is a viable separate increment: calculate cores as the change in CPU core-nanoseconds divided by the source timestamp interval for the same incarnation. Reject counter resets, missing fields, nonpositive intervals and stale sources. Omit GPU series rather than inventing zeros. Access to a container-runtime socket is powerful; mounting it read-only does not restrict which RPCs can be called. No runtime socket, host filesystem, elevated role or collector DaemonSet is added by this change.
 
+The development [cAdvisor CPU/RAM consumer](cadvisor-cpu-memory.md) now offers a separate route through an existing Prometheus source, without a runtime socket or new collector. It requires strict current-container cgroup identities and an explicitly asserted source-timestamp-preserving pipeline. It does not supply GPU attribution or satisfy the hardware acceptance matrix below.
+
 ## Acceptance matrix for a future GPU collector
 
 Run only after approving the target, load, privileges and budget. Start with one dedicated whole GPU and one regular container. Preserve raw source data, status codes, source timestamps and immutable capture hashes for every case.

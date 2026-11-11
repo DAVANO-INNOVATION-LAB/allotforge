@@ -8,6 +8,8 @@ The optional workload advisor uses the fleet snapshot's existing access boundary
 
 The custom attribution adapter is not bundled. Exact Pod/container identity labels and coverage assertions are checked, but they do not cryptographically prove process/device attribution. Do not relabel device-wide exporter metrics as container measurements. Comparisons are advisory experiments, not automatic placement, performance guarantees or cost savings. See [the measurement contract](docs/workload-advisor.md).
 
+The separate cAdvisor source provides CPU/RAM observations only. It requires exact current-incarnation cgroup paths and an explicit administrator assertion that the ingestion pipeline preserves original source timestamps. That assertion is not independently verified by the two metric series. Trusted node/cluster/workload labels and producer configuration are part of the source boundary. Missing or ambiguous identity cannot fall back to names alone. No runtime socket, host mount, new role or collector is installed, and this mode cannot infer GPU activity or CPU/GPU suitability. See [cAdvisor prerequisites](docs/cadvisor-cpu-memory.md).
+
 ## On-demand diagnostic boundary
 
 Live deployment diagnostics always require the separate 32–4096-character administrator bearer token, even if control and project execution are disabled. Demo diagnostics make no external calls. Diagnostics use fixed bounded GETs only, return no node/workload names or raw connection/credential/response contents, and never test writes or grant access. A successful read or advertised API verb is not proof of mutation permissions, admission enforcement, runtime health or tenant safety. Keep this endpoint behind the same independently reviewed trusted-operator ingress as the fleet console.

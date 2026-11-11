@@ -2,7 +2,7 @@
 
 The **Workload advisor** is read-only. It shows every observed Pod, including CPU-only Pods, with requested CPU, memory and GPU budgets. Requests are scheduler accounting, never measured usage. The existing GPU Workloads view remains separate.
 
-Optional measurements feed a conservative experiment recommendation, **not an automatic CPU/GPU selector**. No workload is moved, resized, submitted or migrated. CPU/GPU speed, correctness and cost comparisons remain unknown until matched trials are run. No real GPU hardware or attribution collector was exercised in this implementation.
+Optional custom-adapter measurements feed a conservative experiment recommendation, **not an automatic CPU/GPU selector**. The separate [cAdvisor mode](cadvisor-cpu-memory.md) supplies CPU and memory observations only and cannot select a processor. No workload is moved, resized, submitted or migrated. CPU/GPU speed, correctness and cost comparisons remain unknown until matched trials are run. No real GPU hardware or attribution collector was exercised in this implementation.
 
 ## What the verdicts mean
 
@@ -18,7 +18,9 @@ Confidence in an observed pattern is at most **limited**. A single 15-minute win
 
 Set `DAVANO_WORKLOAD_ADVISOR_ENABLED=true` in live (`DAVANO_SOURCE=kubernetes`) mode, alongside `DAVANO_PROMETHEUS_URL`. The existing optional `DAVANO_PROMETHEUS_TOKEN_PATH`, `DAVANO_PROMETHEUS_CA` and `DAVANO_PROMETHEUS_CLUSTER` apply. No extra Kubernetes writes or RBAC are added. The default inventory-only server has **no application authentication**, including advisor data; enabling the advisor, control API or setting an administrator token alone does not add it. Keep the server on loopback or behind a separately reviewed authenticated proxy. When project execution is enabled, the existing `/api/v1/state` middleware requires the separate administrator bearer token and denies project tokens. Demo mode ignores metric readers and creates no synthetic measurement values.
 
-**A custom, trusted instrumentation adapter is required and is not included.** These are AllotForge's input names, not stock cAdvisor/DCGM/AMD exporter names. Deploying an exporter by itself does not enable runtime attribution. Do not rename device metrics to satisfy this contract. Before enabling it, verify the adapter can prove every included measurement belongs to the stated current container and covers every requested whole GPU.
+Choose `DAVANO_WORKLOAD_METRICS_SOURCE=custom-adapter` (the default) for the contract below, or `cadvisor-cpu-memory` for the separate [CPU/RAM source contract](cadvisor-cpu-memory.md). The latter also requires `DAVANO_CADVISOR_TIMESTAMPS_PRESERVED=true` after verifying the actual ingestion configuration. That flag is an administrator assertion, not independent validation. The two sources are not mixed, and cAdvisor mode never accepts GPU gauges or suggests CPU-versus-GPU suitability.
+
+**The default custom-adapter mode requires trusted instrumentation that is not included.** Its names below are AllotForge inputs, not stock cAdvisor/DCGM/AMD exporter names. Deploying an exporter by itself does not enable GPU attribution. Do not rename device metrics to satisfy this contract. Before enabling it, verify the adapter can establish every included measurement belongs to the stated current container and covers every requested whole GPU.
 
 The adapter emits gauges:
 

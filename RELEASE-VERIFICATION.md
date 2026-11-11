@@ -1,27 +1,28 @@
-# AllotForge 0.6.0 verification
+# AllotForge 0.7.0 candidate verification
 
-Verification was performed on 2026-11-11 before publication. Remote CI status is recorded against the exact release commit in GitHub Actions, not anticipated here.
+Local verification was performed on 2026-11-11. This document does not assert publication. Remote CI and any later release must identify the exact tested commit in GitHub Actions.
 
 ## Local checks
 
-- Full Python suite: **379 tests passed**, including 40 workload-advisor and 32 diagnostics tests.
-- Full UI DOM/API suite: **241 checks passed** (64 main UI/API, 27 control, 57 operations, 24 assignments, 43 diagnostics/session, 26 advisor).
-- Python compilation, all six JavaScript syntax checks and whitespace checks passed.
+- Full Python suite: **444 tests passed**, including 48 cAdvisor tests and 17 smoke-verifier test methods with adversarial cases.
+- Full UI DOM/API suite: **280 checks passed** (64 main UI/API, 27 control, 57 operations, 24 assignments, 43 diagnostics/session, 65 advisor).
+- Python compilation, all six JavaScript syntax checks, whitespace and local documentation links checked.
+- A 0.7.0 wheel was built locally. The cAdvisor module and updated UI assets are included; source-checkout benchmark tools remain in the source distribution rather than the application wheel.
 
-## Feature and integration review
+## Feature review
 
-The workload advisor was independently reviewed in isolation and again after integration with deployment diagnostics. Reproductions that could create false CPU-comparison suggestions from unpaired windows, unrelated CPU-only containers or multi-GPU averages were corrected with regressions. Exact fractional GPU parsing, malformed response sanitization and stale inspection handling were also tightened.
+The cAdvisor source was reviewed independently against source timestamp, current-incarnation identity, quantity and mode-separation boundaries. Disabled or mismatched injected readers cannot issue the wrong source query. Duplicate runtime identities cannot double-count CPU or memory. The interface withholds values unless source status and both source-level and per-metric timestamp assertions are consistent. Existing custom-adapter and session/navigation behavior remains covered.
 
-The combined UI review exercises administrator-session changes during pending inventory refreshes. Old successes/errors cannot populate evidence after credential replacement, disconnect or change-and-revert. The report is advisory only and preserves performance/cost uncertainty.
+The offline smoke verifier was independently exercised with 3,190 field mutations and 34 quantity edge cases. Oversized integers, contradictory attempts, duplicate Pod identities, malformed timezone offsets and output overwrites were checked. Internally consistent supplied evidence still does not authenticate a capture or certify GPU execution.
 
-## Verification scope
+## Verification limits
 
-Python tests cover identity attribution, raw timestamps, metric units, aligned buckets, minimum samples/span/coverage, gaps, restarts, duplicate/conflicting series, custom extended resources, malformed inputs, no-demo measurements, privacy and failure isolation. UI checks cover all existing route families, both new screens and interrupted/late responses. Real localhost HTTPS regression tests validate CA, redirect and sanitized-error behavior for the transport paths they exercise.
+The source-timestamp prerequisite remains an administrator assertion. No live kubelet, cAdvisor collector, ingestion pipeline, real GPU, target runtime or matched CPU/GPU performance trial was run. Request counts do not establish physical GPU exclusivity. The source modes are not mixed, and cAdvisor supplies no GPU activity or processor-suitability result.
 
-Stage 13 desktop/mobile/inspection previews use synthetic fixtures and are visibly labelled static, not browser QA. No live browser, trusted attribution adapter, real GPU or matched CPU/GPU performance trial was run. Historical CPU benchmark result files remain earlier evidence, not a new speed or cost comparison.
+Stage 15 desktop/inspection previews use synthetic fixtures and are visibly labelled static development-candidate previews, not browser QA or real telemetry. DOM/API tests do not establish native browser layout or interaction compatibility. Historical benchmark result files remain earlier evidence, not new performance results.
 
-## Exact-commit release gate
+## Publication gate
 
-The release workflow tests Python 3.11/3.12 and UI contracts, then runs native admission, diagnostic parser and deployment checks on disposable Kubernetes 1.31.4. These API-server checks do not validate Kueue scheduling, collector correctness, CNI, production authorization or workload/GPU execution. Only the publishing job receives contents-write permission; it verifies artifact checksums and the tested main head before creating a development prerelease and a new tag targeted to that commit.
+The existing release workflow tests Python 3.11/3.12 and UI contracts, then runs native admission, diagnostic parser and deployment checks on disposable Kubernetes 1.31.4. These checks do not validate Kueue scheduling, CNI, production authorization, collectors or GPU execution. Only the publishing job receives contents-write permission; it verifies artifact checksums and the tested main head before creating a development prerelease and a new tag targeted to that commit.
 
-No production resources were provisioned or altered. RuntimeClass restrictions, target validation requirements, the trusted-operator access boundary and pending license selection remain in effect.
+This candidate is prepared on a feature branch. No production resources, paid workloads, runtime-socket access or collector permissions were provisioned. The trusted-operator access boundary, compatibility names and pending license selection remain in effect.
