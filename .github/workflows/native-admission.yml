@@ -26,6 +26,10 @@ jobs:
       - run: python scripts/verify_native_admission.py
         env:
           DAVANO_TEST_CONTEXT: kind-davano-ci
+      - name: Check diagnostic parsers against the disposable API server
+        run: python scripts/verify_diagnostics.py
+        env:
+          DAVANO_TEST_CONTEXT: kind-davano-ci
       - name: Render deployment variants
         run: |
           for directory in deploy/base deploy/overlays/live-readonly deploy/overlays/persistent deploy/overlays/openshift deploy/operator deploy/operator-openshift deploy/control-api; do

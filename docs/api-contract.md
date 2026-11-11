@@ -1,4 +1,4 @@
-# AllotForge API v1 (0.4.0 development prototype)
+# AllotForge API v1 (0.5.0 development prototype)
 
 Responses use JSON. OpenAPI at `/openapi.json` and `/docs` describes current input schemas. Inputs reject unknown fields and constrain identifiers/counts. Mutating requests must be same-origin and bounded to 64 KiB; POST/PUT/PATCH require `application/json`. These checks are not a substitute for authentication.
 
@@ -13,9 +13,10 @@ The API has **separate authority boundaries**. The default demo/advisory workspa
 | Other `/api/v1/control/*` routes | Disabled, HTTP 409 | Live source, `DAVANO_CONTROL_ENABLED=true` and administrator bearer token of at least 32 characters required; invalid token returns 401. |
 | `/api/v1/execution/status` | Public configuration description, `enabled: false` | Still public; contains no projects, credentials or workload listings. |
 | Other `/api/v1/execution/*` routes | Disabled, HTTP 409 | Live source, `DAVANO_EXECUTION_ENABLED=true`, valid administrator config and scoped project bearer identity required. |
+| `/api/v1/diagnostics` | Demo-only report is public and makes no external requests | Live mode always requires the administrator bearer token, even when control/execution are disabled. No project-token access. |
 | `/healthz`, `/readyz`, static assets, OpenAPI | Public | Do not disclose project configuration; not a tenant identity/login system. |
 
-Control and execution gates are independent. Enabling control does not authenticate the default inventory workspace. Enabling execution gates unscoped `/api/v1/*` routes even if control is disabled: absent/short/invalid administrator credentials produce 403. Static project `viewer` identities may read and preview; only `submitter` identities may submit, cancel or advance a reassignment. Reassignment routes require scope over both source and target projects. Unknown/inaccessible projects return 404. Tokens must be provisioned privately and used over reviewed TLS ingress. This is not OIDC/SSO.
+Control and execution gates are independent. Enabling control does not authenticate the default inventory workspace. Enabling execution gates the unscoped inventory/advisory routes even if control is disabled: absent/short/invalid administrator credentials produce 403. Diagnostics has its own live administrator gate: missing/invalid client credentials return 401, and missing/invalid server credentials return 503. Static project `viewer` identities may read and preview; only `submitter` identities may submit, cancel or advance a reassignment. Reassignment routes require scope over both source and target projects. Unknown/inaccessible projects return 404. Tokens must be provisioned privately and used over reviewed TLS ingress. This is not OIDC/SSO.
 
 ## Inventory and local advisory workspace
 
@@ -120,6 +121,16 @@ Queue admission/active/finished booleans require current observed-generation con
 Each reported entry exposes only namespace/name, zero-based local/cluster queue positions, source/time, `position_base=0` and `identity_status=unverified`. These are literal API summary observations, never linked to Workload actions/admission. Stock Kueue v0.20.5 omits Workload UID; matching names or owner UIDs cannot identify the current Workload.
 
 Workload rows have an independently validated `uid` and `pending_position`. Bound positions stay unknown unless one exact UID/name/namespace/queue match and current negative admission/reservation conditions corroborate the separate read. Positive matching-UID cases in tests are synthetic, not a stock-upstream guarantee. Optional errors preserve basic queue observations. See [the complete visibility contract](observability.md#bounded-pending-workload-visibility) for call/time/size limits and configuration.
+
+## On-demand deployment diagnostics
+
+`GET /api/v1/diagnostics` runs independently of inventory loading. It is not part of `/state` and is not automatically polled. Demo returns configuration and explicit unverified checks without external calls. Live requires a configured `DAVANO_API_TOKEN` of 32–4096 characters and matching administrator bearer credentials; browser-supplied query parameters or targets are rejected. Invalid startup configuration still fails fast, so a process that cannot start cannot serve diagnostics.
+
+The response has `schema_version=1`, `source`, retrieval `observed_at`, `mode`, `configured_modes`, `checks`, `summary.status_counts`, `bounds` and `limitations`. Each check has a stable `id`, `status`, `evidence`, `detail` and `next_step`, with bounded counts where applicable. Statuses are `configured`, `disabled`, `observed`, `blocked`, `unavailable` and `unverified`. No aggregate readiness score is returned.
+
+Fixed GETs test at most one Node and one Pod per list window and only enabled dependency discovery. A successful list is evidence for that particular read, not full inventory or any write permission. Advertised resource scope/verbs are API compatibility evidence, not the caller's RBAC grants. A separately configured Prometheus source may receive the fixed constant `vector(1)` query; it reads no exporter series and proves no telemetry coverage. Namespace/workload names, tokens, raw URLs, local paths, raw responses and server error bodies are not returned.
+
+The report caps requests, each response's bytes, list window size and between-operation elapsed time. It never follows pagination or redirects, changes permissions, installs dependencies, submits access reviews or mutates cluster resources. The time budget is not a hard operating-system cancellation guarantee. Write authorization, controller/admission enforcement, tenant isolation and runtime/hardware remain unverified regardless of successful reads. See [deployment diagnostics](deployment-diagnostics.md) for exact limits and interpretation.
 
 ## Optional managed control API
 

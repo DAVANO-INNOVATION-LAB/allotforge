@@ -4,7 +4,7 @@
 
 AllotForge is the new product name for this GPU resource console. The existing `davano` Python module, `DAVANO_*` configuration variables, `davano.dev/*` labels and `fleet.davano.io` CRDs remain supported unchanged for upgrade compatibility. The new `allotforge` command starts the same application.
 
-AllotForge combines GPU resource inventory, local advisory pools and policy, RayJob manifest planning, optional exporter/queue observation, and separately enabled Kubernetes control, namespace GPU-ceiling edits and constrained Job execution/reassignment. The UI and API run together. Version **0.4.0 is a development prototype**, not a production-certified GPU platform. License selection is pending.
+AllotForge combines GPU resource inventory, local advisory pools and policy, RayJob manifest planning, optional exporter/queue observation, and separately enabled Kubernetes control, namespace GPU-ceiling edits and constrained Job execution/reassignment. The UI and API run together. Version **0.5.0 is a development prototype**, not a production-certified GPU platform. License selection is pending.
 
 **The default is synthetic demo data with no cluster credentials or cluster writes.** Live inventory is read-only. Cluster mutation requires separate opt-in configuration and permissions; installing the inventory console does not install its operator. No live GPU cluster, device exporter or competitor platform was exercised in this build.
 
@@ -30,7 +30,8 @@ Try the demo:
 3. Add a local policy for a namespace and pool.
 4. Check workload fit. In the seeded fixture, `training` + `research` + NVIDIA + 4 GPUs fits `gpu-h100-02`; 8 GPUs does not. Add 8,000 CPU millicores and 32,768 MiB memory to check the complete single-node request budget. Increase CPU to 12,000 millicores to see exactly why it is blocked. The response explicitly states **not allocated, not submitted**.
 5. Inspect integration capabilities and Device telemetry. Ray manifest planning is available, Kueue control is available but disabled, and Slurm is not implemented. Demo mode fabricates no GPU telemetry or queue admission results.
-6. Open Workload launch to inspect its disabled-by-default boundary. Real submission requires a separately configured project identity and approved profile; it is not enabled by the demo.
+6. Open Deployment diagnostics and run its demo report. Configuration is shown separately from observations; no external requests are made in demo mode.
+7. Open Workload launch to inspect its disabled-by-default boundary. Real submission requires a separately configured project identity and approved profile; it is not enabled by the demo.
 
 The fixture includes explicitly synthetic CPU/RAM budgets and a CPU-only preprocessing Pod so the fit check accounts for non-GPU workloads too. The AMD node intentionally omits CPU allocatable evidence to demonstrate an unknown result. These values are not hardware specifications.
 
@@ -43,6 +44,7 @@ The fixture has 36 labelled whole-GPU resource units and a separate shared-repli
 | Inventory and local workspace | Kubernetes-shaped demo, optional Node/Pod reads, SQLite pools/policies, GPU/CPU/memory request accounting and explainable single-node fit checks | Demo by default. Local policy remains advisory and does not reserve resources. |
 | Ray planning | Validated suspended RayJob export plus pure Kueue manifest builders | Planning only; no live RayJob submission or Ray lifecycle management. |
 | Observability | Pod pending reasons, optional read-only Kueue conditions, scoped pending-summary observations and selected NVIDIA/AMD Prometheus metrics | External sources off by default. Missing, stale or conflicting evidence remains unknown; Intel telemetry unsupported. |
+| Deployment diagnostics | On-demand bounded inventory reads, dependency API discovery and a fixed constant Prometheus query | Demo makes no external requests. Live diagnostics always require an administrator token; no aggregate readiness or enforcement claim. |
 | Managed control | GPUPool/GPUAccessPolicy CRDs and a separate controller for owned Kueue queues, quota and native admission guards | Control API off by default; separate operator installation and consequential RBAC required. No automatic tenant workload grants. |
 | Project execution | Project-scoped preview, submission, observation, cancellation and local audit for constrained single-Pod Kubernetes Jobs | Off by default. Administrator-approved digest-pinned images and fixed commands only; not arbitrary code or Pod-template submission. |
 | Resource assignment | Administrator GPU quota/per-Pod ceiling edits and queued-Job replacement within or across authorized projects | Off by default. Same-pool policy edits only; workload changes cancel and recreate an eligible suspended Job, not live migration. |
@@ -129,6 +131,8 @@ curl http://127.0.0.1:8080/api/v1/execution/status
 
 - [API contract and authentication boundaries](docs/api-contract.md)
 - [GPU, CPU and memory advisory fit](docs/resource-fit.md)
+- [0.5.0 release notes](docs/releases/0.5.0.md)
+- [Deployment diagnostics](docs/deployment-diagnostics.md)
 - [0.4.0 release notes](docs/releases/0.4.0.md)
 - [0.3.0 release notes](docs/releases/0.3.0.md)
 - [Managed control plane](docs/control-plane.md)
@@ -150,7 +154,7 @@ node --check web/app.js   # optional syntax check if Node is present
 python -m benchmarks.harness --help
 ```
 
-Unit, mocked-API and static-manifest tests exercise implementation boundaries. They do not replace real API-server, identity/RBAC, CNI, controller, image or GPU validation. `scripts/verify_native_admission.py` is restricted to the disposable `kind-davano-ci` context and is a separate opt-in check, not a test run here. [Historical verification](docs/verification.md) covers the initial 0.1.0 snapshot; use the current test output for subsequent changes.
+Unit, mocked-API and static-manifest tests exercise implementation boundaries. They do not replace real API-server, identity/RBAC, CNI, controller, image or GPU validation. `scripts/verify_native_admission.py` is restricted to the disposable `kind-davano-ci` context and runs in the exact-commit release gate against a disposable kind cluster. The companion diagnostic parser smoke uses fixed kubectl GETs against that same API server; it does not validate application authentication, production RBAC or GPU behavior. [Historical verification](docs/verification.md) covers the initial 0.1.0 snapshot; use the current test output for subsequent changes.
 
 The included benchmark result files measure real local CPU timings over synthetic inventory only. They do not measure GPU throughput, queue admission, live inference or competitor performance. The harness rejects unsupported comparative conclusions rather than presenting replay or mock data as a live result.
 

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "davano"
-version = "0.4.0"
+version = "0.5.0"
 description = "AllotForge resource planning, GPU inventory and opt-in Kubernetes guardrails"
 requires-python = ">=3.11"
 dependencies = ["fastapi==0.141.1", "uvicorn==0.52.1", "pydantic==2.13.4"]

@@ -1,6 +1,10 @@
 # Security boundary
 
-AllotForge 0.2.0 is a development release, **not production-certified or a secure multi-tenant execution platform**. In default inventory-only mode, inventory/advisory endpoints have no application login. The optional Kubernetes control API uses a separate administrator bearer token. The optional constrained execution broker authenticates statically provisioned, project-scoped bearer identities; it is not OIDC/SSO or an organizational identity service. When execution is enabled, unscoped inventory/advisory routes also require the administrator token and fail closed when it is absent. Keep the app on loopback or a private network behind independently reviewed TLS and authentication.
+AllotForge is a development prototype, **not production-certified or a secure multi-tenant execution platform**. In default inventory-only mode, inventory/advisory endpoints have no application login. The optional Kubernetes control API uses a separate administrator bearer token. The optional constrained execution broker authenticates statically provisioned, project-scoped bearer identities; it is not OIDC/SSO or an organizational identity service. When execution is enabled, unscoped inventory/advisory routes also require the administrator token and fail closed when it is absent. Keep the app on loopback or a private network behind independently reviewed TLS and authentication.
+
+## On-demand diagnostic boundary
+
+Live deployment diagnostics always require the separate 32–4096-character administrator bearer token, even if control and project execution are disabled. Demo diagnostics make no external calls. Diagnostics use fixed bounded GETs only, return no node/workload names or raw connection/credential/response contents, and never test writes or grant access. A successful read or advertised API verb is not proof of mutation permissions, admission enforcement, runtime health or tenant safety. Keep this endpoint behind the same independently reviewed trusted-operator ingress as the fleet console.
 
 ## Explicitly enabled cluster writes
 
@@ -49,9 +53,9 @@ Observed invalid GPU eligibility requests `stopPolicy=Hold` on the owned Kueue C
 - Review cluster read access: it exposes node/pod names, labels and workload information across namespaces.
 - Add organization SSO and federated authorization, immutable audit retention, TLS/credential rotation, tested network isolation, backups, image signature verification, vulnerability scans and tested rollback before broader deployment. Broker image-digest pinning alone does not establish provenance.
 - Do not commit bearer tokens, Kubernetes credentials, private keys, live databases or private inventory exports.
-- No live Kubernetes/OpenShift admission, RBAC, GPU scheduling, image-runtime or production security validation has passed in this build. Unit tests and API doubles are not substitutes.
+- Exact-commit CI exercises native admission and diagnostic API response parsing on disposable Kubernetes 1.31.4. It does not verify target OpenShift, application transport/authentication, production RBAC, Kueue scheduling, image runtime, GPU hardware or production security. Unit tests and API doubles are not substitutes.
 
-There is no public repository or security-reporting address for this source bundle yet. Select a license and private vulnerability-reporting channel before publishing. Do not disclose credentials or sensitive cluster data in public issues. See [control-plane scope and release gates](docs/control-plane.md).
+The [repository](https://github.com/DAVANO-INNOVATION-LAB/allotforge) is public for source review. A license and private vulnerability-reporting channel still need to be selected. Do not disclose credentials or sensitive cluster data in public issues. See [control-plane scope and release gates](docs/control-plane.md).
 
 ### RuntimeClass prerequisite
 

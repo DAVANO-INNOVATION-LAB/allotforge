@@ -44,9 +44,9 @@ def create_app(source=None, db_path=None, inventory=None):
     @app.middleware("http")
     async def browser_safety(request: Request, call_next):
         # Enabling scoped execution must not leave a second unscoped route to
-        # live workload data or local configuration. Control has its own auth.
+        # live workload data or local configuration. Control and diagnostics have their own auth.
         route = request.url.path
-        if execution_enabled and route.startswith("/api/v1/") and not route.startswith(("/api/v1/execution/", "/api/v1/control/")):
+        if execution_enabled and route.startswith("/api/v1/") and route != "/api/v1/diagnostics" and not route.startswith(("/api/v1/execution/", "/api/v1/control/")):
             supplied = request.headers.get("authorization", "")
             candidate = supplied[7:] if supplied.startswith("Bearer ") else ""
             if len(inventory_admin_token) < 32 or not hmac.compare_digest(candidate.encode("utf-8"), inventory_admin_token.encode("utf-8")):
@@ -135,6 +135,9 @@ def create_app(source=None, db_path=None, inventory=None):
             return fleet.evaluate(body)
         except KeyError as e:
             raise HTTPException(404, e.args[0]) from None
+
+    from .diagnostics import install_diagnostics_api
+    install_diagnostics_api(app, source, inventory=inventory)
 
     from .control_api import install_control_api
     install_control_api(app, source)

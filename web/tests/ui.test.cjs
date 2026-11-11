@@ -10,7 +10,7 @@ const root=path.resolve(__dirname,'..');
 const scratch=fs.mkdtempSync(path.join(os.tmpdir(),'davano-ui-test-'));
 const dbPath=path.join(scratch,'ui.db');
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
-const script=fs.readFileSync(path.join(root,'features.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'assignments.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'operations.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'app.js'),'utf8')+'\nwindow.__uiTest={conditionState,safeCredentialOrigin};';
+const script=fs.readFileSync(path.join(root,'features.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'assignments.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'operations.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'diagnostics.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'app.js'),'utf8')+'\nwindow.__uiTest={conditionState,safeCredentialOrigin};';
 const dom=new JSDOM(html,{url:'http://localhost/',runScripts:'outside-only',pretendToBeVisual:true});
 const w=dom.window,d=w.document;
 let failedFetch=false, mutateResponse=null, checks=0, calls=[], holdFetch=null, mutateEvaluation=null;
@@ -49,7 +49,8 @@ function savePreview(name){
  check('overview renders actual backend fixture totals',()=>{assert.match(text(),/36/);assert.match(text(),/22/);assert.match(text(),/14/);assert.match(text(),/Unrequested capacity/);});
  savePreview('stage-2-overview');
  check('demo provenance and advisory boundary visible',()=>{assert.match(d.getElementById('source-chip').textContent,/Demo fixture/);assert.match(text(),/No cluster is connected/);assert.match(text(),/no resources are allocated/);});
- for(const page of ['inventory','pools','workloads','assignments','launch','telemetry','policies','integrations','control','activity','overview']){await nav(page);check(`navigate ${page}`,()=>{assert.equal(d.querySelectorAll('h1').length,1);assert.equal(d.querySelector('[aria-current="page"]').getAttribute('href'),'#'+page);});}
+ for(const page of ['inventory','pools','workloads','assignments','launch','telemetry','policies','integrations','control','diagnostics','activity','overview']){await nav(page);check(`navigate ${page}`,()=>{assert.equal(d.querySelectorAll('h1').length,1);assert.equal(d.querySelector('[aria-current="page"]').getAttribute('href'),'#'+page);});}
+ await nav('diagnostics');check('real demo diagnostics never run during navigation',()=>assert.equal(calls.filter(c=>c.url==='/api/v1/diagnostics').length,0));click('[data-action="run-diagnostics"]');await tick();check('real demo diagnostic report matches the UI contract',()=>{assert.match(text(),/DEMO REPORT · NO EXTERNAL PROBES/);assert.equal(d.querySelectorAll('.diagnostic-check').length,10);assert.equal(d.querySelectorAll('.diagnostic-check .badge.blue').length,0);assert.equal(d.querySelector('.diagnostic-error'),null);assert.doesNotMatch(text(),/Unrecognized or malformed/);});
  await nav('launch');check('real API execution is disabled without seeded fake Jobs',()=>{assert.match(text(),/Workload execution is disabled/);assert.equal(d.querySelector('#execution-form'),null);});
  await nav('telemetry');check('real API demo telemetry has no invented devices',()=>{assert.match(text(),/No device signal is invented/);assert.equal(d.querySelectorAll('.device-card').length,0);assert.match(text(),/unknown/i);});
  await nav('inventory');
@@ -123,7 +124,7 @@ function savePreview(name){
  mutateResponse=null;failedFetch=true;click('#refresh');await tick();
  check('API failure is explicit and never falls back to fixtures',()=>{assert.match(text(),/Inventory unavailable/);assert.match(text(),/does not silently replace/);assert.equal(d.querySelectorAll('.metric').length,0);assert.match(d.getElementById('source-chip').textContent,/unavailable/);});
  failedFetch=false;click('[data-action="retry"]');await tick();check('retry recovers inventory',()=>assert.match(text(),/GPU inventory/));
- check('only expected same-origin API routes used',()=>assert.ok(calls.every(x=>/^\/api\/v1\/(state|pools|policies|evaluate|control\/(status|pools|policies)|ray\/(capabilities|plan)|execution\/status)$/.test(x.url))));
+ check('only expected same-origin API routes used',()=>assert.ok(calls.every(x=>/^\/api\/v1\/(state|diagnostics|pools|policies|evaluate|control\/(status|pools|policies)|ray\/(capabilities|plan)|execution\/status)$/.test(x.url))));
  check('all API requests reject redirects and avoid browser cache',()=>assert.ok(calls.every(x=>x.options.redirect==='error'&&x.options.cache==='no-store'&&x.options.credentials==='same-origin')));
  await nav('control');
  check('control page reports disabled write authority without fake resources',()=>{assert.match(text(),/Cluster writes are disabled/);assert.match(text(),/No fixture resources/);assert.equal(d.querySelectorAll('[data-control-resource]').length,0);});

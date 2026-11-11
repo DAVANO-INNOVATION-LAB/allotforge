@@ -1,6 +1,6 @@
 # Capabilities and ownership boundaries
 
-This document describes the **0.4.0 implementation**, including code paths that are disabled by default. It is not evidence of deployment, GPU execution, production safety or comparative performance. The default app uses labelled synthetic inventory; no cluster credentials, operator, execution access or exporter connection are enabled automatically.
+This document describes the **0.5.0 implementation**, including code paths that are disabled by default. It is not evidence of deployment, GPU execution, production safety or comparative performance. The default app uses labelled synthetic inventory; no cluster credentials, operator, execution access or exporter connection are enabled automatically.
 
 ## Implemented capabilities and authority
 
@@ -17,6 +17,7 @@ This document describes the **0.4.0 implementation**, including code paths that 
 | Queued workload reassignment | Opt-in cancel-and-recreate | Replace eligible broker-owned queued Jobs within/across authorized projects, with target-name reservation and durable operation state. No running/admitted-job migration. |
 | Pod pending diagnostics | Read-only observation | Sanitized Pod conditions and waiting reasons; Pending alone does not prove GPU exhaustion. |
 | Kueue queue observation | Read-only, opt-in | Discovers a served API and reads conditions. Separately enabled scoped pending-summary windows preserve identity uncertainty and never predict admission times. |
+| Deployment diagnostics | Bounded, on-demand evidence | Separates configuration, successful narrow reads and API discovery from unverified writes, enforcement and runtime. No production-ready verdict. |
 | GPU telemetry | Read-only, opt-in adapters | Selected NVIDIA DCGM and AMD exporter metrics through Prometheus; no real hardware validation, Intel telemetry unsupported. |
 | Benchmarks | Scoped measurement tooling | Local CPU smoke results, offline batch adapters and bounded HTTP inference measurements; no included live GPU or competitor run. |
 | MIG/sharing reconfiguration, Slurm, provisioning | Unsupported | No driver/device-plugin changes, MIG layout changes, Slurm control, cluster provisioning or autoscaling. |
@@ -92,7 +93,7 @@ Standalone queue exports have deterministic names but no reconciliation or owner
 
 ## Historical contracts and verification limits
 
-`deploy/contracts/capabilities.schema.json` is a **legacy design artifact**, not the current capability endpoint or an authoritative schema for opt-in control. `/api/v1/capabilities` is not served. Use the current state and separate `/control/status`, `/execution/status`, `/ray/capabilities` and `/observability` routes.
+`deploy/contracts/capabilities.schema.json` is a **legacy design artifact**, not the current capability endpoint or an authoritative schema for opt-in control. `/api/v1/capabilities` is not served. Use the current state and separate `/control/status`, `/execution/status`, `/ray/capabilities`, `/observability` and the separately authorized `/diagnostics` routes.
 
 The namespaced draft `AllotForgePool` and `AllotForgeOwnershipPolicy` CRDs in `deploy/contracts/` are excluded from deployment roots and unwatched. They are distinct from the implemented managed CRDs. `deploy/examples/future-contracts.yaml` is illustrative, not current operator configuration.
 

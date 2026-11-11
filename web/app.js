@@ -24,7 +24,7 @@ const esc = value => String(value ?? '').replace(/[&<>"']/g, c=>({'&':'&amp;','<
 const count = value => value === null || value === undefined ? 'Unknown' : Number(value).toLocaleString();
 const known = value => typeof value === 'number' && Number.isFinite(value);
 const percent = (a,b) => known(a)&&known(b)&&b>0 ? Math.min(100,Math.max(0,a/b*100)) : 0;
-const navItems=[['overview','Overview','grid'],['inventory','GPU inventory','chip'],['pools','Resource pools','layers'],['workloads','Workloads','activity'],['assignments','Resource assignment','layers'],['launch','Workload launch','arrow'],['telemetry','Device telemetry','activity'],['policies','Advisory policies','shield'],['integrations','Integrations','plug'],['control','Cluster control','server'],['activity','Activity log','history']];
+const navItems=[['overview','Overview','grid'],['inventory','GPU inventory','chip'],['pools','Resource pools','layers'],['workloads','Workloads','activity'],['assignments','Resource assignment','layers'],['launch','Workload launch','arrow'],['telemetry','Device telemetry','activity'],['policies','Advisory policies','shield'],['integrations','Integrations','plug'],['control','Cluster control','server'],['diagnostics','Deployment diagnostics','shield'],['activity','Activity log','history']];
 const titles=Object.fromEntries(navItems.map(([id,label])=>[id,label]));
 let state = null, loadError = null, loadErrorStatus = null, page='overview', query='', filter='all', busy=false;
 let restoreFocus = null, toastTimer, dialogGeneration=0, evaluationRevision=0;
@@ -55,12 +55,14 @@ async function load(silent=false){
  }catch(error){loadError=error.message;loadErrorStatus=error.status;document.getElementById('source-chip').className='source-chip';document.getElementById('source-chip').innerHTML='Inventory unavailable';render();}
  finally{busy=false;document.getElementById('refresh-icon').classList.remove('spin');}
 }
-function navigate(){clearMovePlan();invalidateAllocation();invalidateExecutionPlan();if(document.getElementById('modal').open)closeDialog();const next=location.hash.slice(1).split('?')[0]||'overview';page=titles[next]?next:'overview';query='';filter='all';render();closeMenu();if(['control','assignments'].includes(page)&&controlState?.enabled&&apiToken)loadControlResources();}
+function navigate(){leaveDiagnostics();clearMovePlan();invalidateAllocation();invalidateExecutionPlan();if(document.getElementById('modal').open)closeDialog();const next=location.hash.slice(1).split('?')[0]||'overview';page=titles[next]?next:'overview';query='';filter='all';render();closeMenu();if(['control','assignments'].includes(page)&&controlState?.enabled&&apiToken)loadControlResources();}
 function render(){
+ syncDiagnosticsCredential();
  document.getElementById('navigation').innerHTML=navItems.map(([id,label,symbol])=>`<a class="nav-item ${page===id?'active':''}" href="#${id}" ${page===id?'aria-current="page"':''}>${icon(symbol,16)}<span>${label}</span>${id==='pools'&&state?`<span class="nav-count">${state.pools.length}</span>`:''}</a>`).join('');
  document.getElementById('breadcrumb-title').textContent=titles[page];
  document.title=`${titles[page]} · AllotForge`;
  const main=document.getElementById('main');
+ if(page==='diagnostics'){main.innerHTML=`<div class="page-enter">${diagnostics()}</div>`;return;}
  if(page==='assignments'){main.innerHTML=`<div class="page-enter">${assignments()}</div>`;return;}
  if(page==='launch'){main.innerHTML=`<div class="page-enter">${execution()}</div>`;return;}
  if(page==='control'){main.innerHTML=`<div class="page-enter">${control()}</div>`;return;}

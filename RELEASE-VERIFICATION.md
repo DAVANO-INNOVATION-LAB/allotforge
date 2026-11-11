@@ -1,21 +1,24 @@
-# AllotForge 0.4.0 verification
+# AllotForge 0.5.0 verification
 
 Local verification was performed on 2026-11-11 before publication. Remote CI status is recorded against the exact release commit in GitHub Actions, not anticipated here.
 
 ## Local checks
 
-- Full Python unit/API-double/static-manifest suite: **307 tests passed**.
-- Full UI DOM/API suite: **169 checks passed** (61 main UI, 27 control, 57 execution/telemetry/visibility, 24 assignment/reassignment).
-- Python compilation and all four JavaScript syntax checks passed.
-- Independent review verified the pinned Kueue v0.20.5 contract, including omitted Workload UID and zero-based queue indices. No blocking findings remain.
-- Stage11 labelled static previews cover upstream-style identity-unverified summary entries, partial windows and unavailable visibility. They are synthetic HTML/CSS previews, not browser QA or live Kueue screenshots.
+- Full Python suite: **339 tests passed**, including **32 deployment-diagnostics tests**.
+- Full UI DOM/API suite: **200 checks passed** (64 main UI/API, 27 control, 57 operations, 24 assignments, 28 diagnostics).
+- Python compilation, all five JavaScript syntax checks and whitespace checks passed.
+- Diagnostics transport tests use a real ephemeral localhost HTTPS server for trusted/untrusted CA behavior, redirect rejection and error redaction. API tests cover the independent live administrator gate, disabled/demo isolation and runtime inventory failure.
+- Independent review found no remaining blocking issue. A separate 636-case malformed-payload sweep found no source-data leakage or request-limit violations. Missing discovery verbs and numeric overflow handling were corrected before publication.
+- Stage12 static previews cover initial, loading, demo, observed/blocked, stale and unauthorized states on desktop/mobile. They are labelled synthetic HTML/CSS previews, not browser QA or live cluster screenshots.
 
-## Release gates
+## Exact-commit release gates
 
-The release workflow tests Python 3.11/3.12 and UI contracts, runs existing disposable-kind native admission and Kustomize/server checks, then builds exact-commit source and wheel artifacts. Only publishing has contents-write permission. It verifies checksums, checks the main head, refuses existing tags and publishes a development prerelease targeted to the tested SHA.
+The release workflow tests Python 3.11/3.12 and all UI contracts, then runs native admission and deployment checks on disposable Kubernetes 1.31.4. A new diagnostic parser smoke performs five fixed kubectl GETs under the existing CI identity: bounded Node/Pod lists, managed/native API discovery, and absent Kueue detection. The smoke checks its exact disposable context before reading; it never forwards its dummy fixture credential.
+
+The parser smoke validates real API response shapes, not the application's HTTPS transport or administrator authentication, target least-privilege RBAC, Kueue operation, controller correctness or hardware. Those evidence scopes stay distinct. Existing native admission smoke remains a separate positive/negative API-server test.
+
+Only publishing receives contents-write permission. After all gates pass, it builds exact-commit source and wheel artifacts, verifies checksums, verifies main's head, refuses existing tags and publishes a development prerelease targeted to the tested SHA.
 
 ## Limits
 
-New visibility checks use synthetic transport/API doubles. No live Kueue visibility service, production permission binding, real queue scheduling, exporter or GPU hardware was tested. RuntimeClass restrictions and prerequisites from 0.3.0 remain in force. Existing Kubernetes CI is real API-server validation on a disposable CPU-only kind cluster, not a GPU/Kueue deployment test.
-
-Local browser interaction/layout remains unverified; DOM/API checks and static previews are not browser certification. Historical CPU benchmark files remain 0.2.0 evidence, not new performance results. No production cluster or GPU resources were provisioned. License selection remains pending.
+No production cluster, real Kueue service, CNI/tenant isolation, exporter deployment, workload runtime or GPU hardware was validated or provisioned. Local HTTPS and synthetic contract tests do not establish target compatibility. No live browser interaction/layout validation was completed; DOM/API checks and static previews are not browser certification. Existing RuntimeClass restrictions and prerequisites remain in force. Historical CPU benchmark files remain 0.2.0 evidence, not new performance results. License selection remains pending.
