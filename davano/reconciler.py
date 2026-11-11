@@ -68,7 +68,11 @@ def native_policy(policy, pool):
         {'expression': f'!variables.usesGPU || variables.gpuContainers.all(c, string(c.resources.limits[{r}]).matches("^[0-9]+$"))', 'message': 'GPU limits must be nonnegative plain integers'},
         {'expression': f'!variables.usesGPU || variables.gpuContainers.map(c, int(c.resources.limits[{r}])).sum() <= {spec["maxGPUsPerPod"]}', 'message': 'Conservative total of GPU limits across app and init containers exceeds maxGPUsPerPod'},
         {'expression': f'!variables.usesGPU || (has(object.spec.nodeSelector) && ({selected}) && !has(object.spec.nodeName))', 'message': 'GPU Pods require the assigned protected pool node selector and must use scheduler placement'},
-        {'expression': f'!has(object.spec.overhead) || !object.spec.overhead.exists(k, {gpu_key})', 'message': 'GPU Pod overhead is unsupported'},
+        # Kubernetes 1.31's admission CEL schema does not expose Pod overhead.
+        # RuntimeClass admission rejects overhead without a matching RuntimeClass.
+        # Deny RuntimeClass on ALL Pods: even CPU-only containers could otherwise
+        # acquire GPU overhead without triggering usesGPU. See docs/control-plane.md.
+        {'expression': '!has(object.spec.runtimeClassName)', 'message': 'RuntimeClass is unsupported in managed GPU namespaces'},
     ]
     vap = object_for('admissionregistration.k8s.io/v1', 'ValidatingAdmissionPolicy', name, {
         'failurePolicy': 'Fail',

@@ -4,7 +4,7 @@ Verified against the 0.3.0 working tree on 2026-11-11 before publication. This f
 
 ## Passed locally
 
-- Full Python unit/API-double/static-manifest suite: **289 tests passed**.
+- Full Python unit/API-double/static-manifest suite: **290 tests passed**.
 - UI DOM/API suite: **143 checks passed** (61 main UI, 27 control, 31 execution/telemetry, 24 assignment/reassignment).
 - Python compilation: `davano` and `benchmarks`.
 - JavaScript syntax: app, features, operations and assignments.
@@ -12,7 +12,7 @@ Verified against the 0.3.0 working tree on 2026-11-11 before publication. This f
 - Independent review of request-accounting changes and release workflow. Malformed GPU-map and CPU-only Pod-condition regressions found during review were fixed and covered by tests.
 - Three labelled static HTML/CSS previews exercise synthetic fit, CPU-blocked and unknown-CPU scenarios. These are not browser QA or live cluster evidence. Preview files are generated artifacts and excluded from the repository source manifest.
 
-The first remote native-admission attempt exposed a pre-existing CRD CEL reserved-field reference. The `namespace` field now uses its required CEL escape, with static and real-API subject allow/deny regression coverage. Publication remains gated on a successful fresh run.
+The first remote native-admission attempt exposed a pre-existing CRD CEL reserved-field reference. The `namespace` field now uses its required CEL escape, with static and real-API subject allow/deny regression coverage. A second server check exposed an unsupported Pod overhead CEL field. The guard now conservatively disallows RuntimeClass on all new Pods in managed namespaces, with explicit built-in RuntimeClass-admission prerequisites and real-server bypass tests. Publication remains gated on a successful fresh run.
 
 ## Release gates
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Real Kubernetes admission smoke test, restricted to disposable kind-davano-ci.
 
-Creates/deletes only fixed test namespace and two test-named admission policies.
+Creates/deletes fixed test namespace, test admission policies and test RuntimeClass.
 Does not test Kueue controllers, GPU devices, RBAC or workload execution.
 Run with DAVANO_TEST_CONTEXT=kind-davano-ci. Never run against production.
 """
@@ -27,7 +27,10 @@ def kubectl(*args, body=None, check=True):
 
 pool={'metadata':{'name':'a','uid':'admission-test-pool'},'spec':{'nodeSelector':{'davano.io.node-restriction.kubernetes.io/pool':'test'},'resourceName':'nvidia.com/gpu','nominalQuota':8,'mode':'whole-gpu'}}
 policy={'metadata':{'name':'a','namespace':NS,'uid':'admission-test-policy'},'spec':{'poolRef':'a','gpuQuota':4,'maxGPUsPerPod':2,'subjects':[{'kind':'Group','name':'test'}]}}
-resources=[*native_policy(policy,pool),*job_policy(policy,pool)]
+runtime_class={'apiVersion':'node.k8s.io/v1','kind':'RuntimeClass',
+               'metadata':{'name':'davano-admission-test'},'handler':'runc',
+               'overhead':{'podFixed':{'cpu':'10m','memory':'16Mi'}}}
+resources=[runtime_class,*native_policy(policy,pool),*job_policy(policy,pool)]
 
 def pod(name,limits=None,selector=True,**spec):
     c={'name':'worker','image':'registry.k8s.io/pause:3.10'}
@@ -87,6 +90,18 @@ try:
         time.sleep(1)
     allowed(pod('valid',{'nvidia.com/gpu':'2'}))
     allowed(pod('cpu-only',None,False))
+    # A real RuntimeClass ensures the policy, not a missing-class lookup, denies
+    # both GPU and CPU-only Pods. The conservative restriction covers ALL overhead.
+    for name,limits,selector in [('gpu-runtime',{'nvidia.com/gpu':'1'},True),
+                                 ('cpu-runtime',None,False)]:
+        denied(pod(name,limits,selector,runtimeClassName=runtime_class['metadata']['name']),
+               'RuntimeClass is unsupported in managed GPU namespaces')
+    # Verify the built-in RuntimeClass admission prerequisite: manually supplied
+    # GPU overhead without a RuntimeClass is rejected, including CPU-only Pods.
+    for name,limits,selector in [('gpu-overhead',{'nvidia.com/gpu':'1'},True),
+                                 ('cpu-overhead',None,False)]:
+        denied(pod(name,limits,selector,overhead={'nvidia.com/gpu':'1'}),
+               'Pod Overhead set without corresponding RuntimeClass defined Overhead')
     denied(pod('oversized',{'nvidia.com/gpu':'3'}),'maxGPUsPerPod')
     denied(pod('wrong-vendor',{'amd.com/gpu':'1'}),'GPU resource must match')
     denied(pod('missing-selector',{'nvidia.com/gpu':'1'},False),'assigned protected pool node selector')

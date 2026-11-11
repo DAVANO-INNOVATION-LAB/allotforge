@@ -1,5 +1,5 @@
 {
-  "created_at": "2026-11-11T21:06:38.535559+00:00",
+  "created_at": "2026-11-11T21:12:28.223069+00:00",
   "files": {
     ".dockerignore": {
       "bytes": 75,
@@ -34,12 +34,12 @@
       "sha256": "af77663b41554f53b2b6e42c700563ffc14ba38a42ce482e9129a59988eeef67"
     },
     "RELEASE-VERIFICATION.md": {
-      "bytes": 2835,
-      "sha256": "c14e1c4ca9a8d7c564d4ef51113a8f6290a906c4b09e2ac3e14148420a838957"
+      "bytes": 3085,
+      "sha256": "d6c2b29c6ab1dbc27d76acaf6bbd169af7af23da3cbeab53f7b0e9c8685ae59c"
     },
     "SECURITY.md": {
-      "bytes": 9577,
-      "sha256": "cd65ca7270ff5908b9d5d414e73c23c5ed4a8f6ebd76fbec0432937111e0b5f0"
+      "bytes": 10119,
+      "sha256": "3e64b3d607aeb9e08aa34a6b53504534a23000a3550883975faaf91ccb40956d"
     },
     "benchmarks/README.md": {
       "bytes": 15701,
@@ -134,8 +134,8 @@
       "sha256": "864e857214c6ac27732376b516f4fd459c459da73d8383baed5a148b9be822bb"
     },
     "davano/reconciler.py": {
-      "bytes": 26943,
-      "sha256": "bf5f352f971f492e71840693a05ab112a54eeb5f0d051d16e85ed66484e8d481"
+      "bytes": 27256,
+      "sha256": "6586f302ed6bbaea24f0d445a462ec65b57fc29f515e33fa893a6a700756b7c6"
     },
     "davano/service.py": {
       "bytes": 10379,
@@ -362,8 +362,8 @@
       "sha256": "bb4d0cbe14aa41d11a277c7a15954358cff59522652b4f792fa6376eddf8f6c4"
     },
     "docs/control-plane.md": {
-      "bytes": 13947,
-      "sha256": "cdeb454cddd2f2ea1182255bfbc980feb17eb5b65e79439d9089ab7426cdd8ba"
+      "bytes": 14996,
+      "sha256": "29fe600099939f49f7d1d8de317ea437d629498c0bc912b3e8be71d6cdd30be7"
     },
     "docs/deployment.md": {
       "bytes": 8871,
@@ -378,8 +378,8 @@
       "sha256": "079bc3ef84033de1d36996ee00ecdbc061c8bca478f20a72afc38e395f285198"
     },
     "docs/releases/0.3.0.md": {
-      "bytes": 1732,
-      "sha256": "37bac712fd913edb74b7af882c52884ecbbf600666f6070badc58d51be3b386c"
+      "bytes": 2020,
+      "sha256": "69fde440cceca5bca23a22ba7d3e45ac986a41096cb57f89a116736bde487fe2"
     },
     "docs/resource-assignment.md": {
       "bytes": 8560,
@@ -414,8 +414,8 @@
       "sha256": "39516704f128efff14457c828a7acd6bfa6621049f6df1d53f78882cc10b84ac"
     },
     "scripts/verify_native_admission.py": {
-      "bytes": 6485,
-      "sha256": "a25c4afd35c06d8a57d71644c7b2a8d947ffe976dc74ccb27e2235d5d5d42925"
+      "bytes": 7652,
+      "sha256": "7634bd17e9ba4d567abf0d78b01240f50ddf6304bf784511446c976df5ebcb13"
     },
     "tests/test_api.py": {
       "bytes": 8541,
@@ -430,8 +430,8 @@
       "sha256": "903df2e7c6d6621f420f171807accb6165393b2993b836c6d0d394a9dca720f4"
     },
     "tests/test_control.py": {
-      "bytes": 23968,
-      "sha256": "a6fea64dd2229f95d637da401c7308739a46eaefeae3c81d5f69be1cbeb42d56"
+      "bytes": 24584,
+      "sha256": "190aefa0ffe7cf7356b74a24af74649e9d287dc034c064ddf2213b574ca9ec22"
     },
     "tests/test_control_manifests.py": {
       "bytes": 6179,

@@ -153,6 +153,14 @@ class ReconcileTests(unittest.TestCase):
     def test_native_policy_scopes_namespace_and_fail_closed(self):
         vap,binding=native_policy(policy(),pool());self.assertEqual(vap['spec']['failurePolicy'],'Fail');self.assertEqual(binding['spec']['validationActions'],['Deny']);self.assertEqual(vap['spec']['matchConditions'][0]['expression'],'request.namespace == "team"');self.assertIn('!has(object.spec.nodeName)',vap['spec']['validations'][3]['expression']);self.assertEqual(vap['spec']['matchConstraints']['resourceRules'][0]['operations'],['CREATE'])
 
+    def test_native_policy_denies_runtimeclass_even_without_container_gpu(self):
+        vap,_=native_policy(policy(),pool())
+        guard=next(v for v in vap['spec']['validations'] if v['message']=='RuntimeClass is unsupported in managed GPU namespaces')
+        self.assertEqual(guard['expression'],'!has(object.spec.runtimeClassName)')
+        # Do not condition this on usesGPU: RuntimeClass may inject overhead into
+        # an otherwise CPU-only Pod. Nor hide an unsupported field behind dyn().
+        self.assertTrue(all('object.spec.overhead' not in v['expression'] for v in vap['spec']['validations']))
+
     def test_subjects_never_grant_workload_permissions(self):
         c,p,a=fixture();Reconciler(c,['team']).cycle();status=c.get(cr_path(a))['status'];self.assertEqual(status['workloadGrants'],'disabled');self.assertEqual(status['conditions'][0]['status'],'False');self.assertTrue(any(x['type']=='WorkloadAccess' and x['status']=='False' for x in status['conditions']));self.assertTrue(any(x['type']=='GuardrailsReady' and x['status']=='True' for x in status['conditions']));self.assertFalse(any(o['kind']=='RoleBinding' for o in c.objects.values()))
     def test_legacy_owned_grant_revoked_even_if_nodes_unavailable(self):

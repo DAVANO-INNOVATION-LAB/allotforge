@@ -52,3 +52,7 @@ Observed invalid GPU eligibility requests `stopPolicy=Hold` on the owned Kueue C
 - No live Kubernetes/OpenShift admission, RBAC, GPU scheduling, image-runtime or production security validation has passed in this build. Unit tests and API doubles are not substitutes.
 
 There is no public repository or security-reporting address for this source bundle yet. Select a license and private vulnerability-reporting channel before publishing. Do not disclose credentials or sensitive cluster data in public issues. See [control-plane scope and release gates](docs/control-plane.md).
+
+### RuntimeClass prerequisite
+
+Managed native Pod guards conservatively reject `runtimeClassName` on all new Pods in their namespace, including CPU-only Pods. Kubernetes RuntimeClass admission must remain enabled so manually supplied Pod overhead without a matching RuntimeClass is rejected after mutation. Do not enable this control path on an API server with that admission plugin disabled. This release does not support custom-runtime or sandboxed RuntimeClass workloads in managed namespaces. Existing Pods are not evicted or rewritten.
