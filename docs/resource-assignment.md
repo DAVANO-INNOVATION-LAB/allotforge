@@ -1,6 +1,6 @@
 # Assign GPU resources to namespaces, projects and workloads
 
-Davano supports two different operations. Neither physically moves a GPU, edits device-plugin configuration, changes a running container's GPU assignment, or provides transparent live migration. This extension has local API-double tests, not live GPU/cluster validation.
+AllotForge supports two different operations. Neither physically moves a GPU, edits device-plugin configuration, changes a running container's GPU assignment, or provides transparent live migration. This extension has local API-double tests, not live GPU/cluster validation.
 
 ## 1. Namespace/project GPU ceilings
 

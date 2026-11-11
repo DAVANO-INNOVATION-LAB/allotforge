@@ -1,2 +1,5 @@
-"""Davano GPU inventory and opt-in Kubernetes guardrail control plane."""
-__version__ = "0.2.0"
+"""AllotForge resource planning and opt-in Kubernetes guardrail control.
+
+The davano import namespace is retained for compatibility.
+"""
+__version__ = "0.3.0"

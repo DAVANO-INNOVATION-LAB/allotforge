@@ -1,6 +1,7 @@
 name: Validate native admission
 on:
   workflow_dispatch:
+  workflow_call:
   pull_request:
 permissions:
   contents: read

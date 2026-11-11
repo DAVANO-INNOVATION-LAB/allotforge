@@ -1,6 +1,6 @@
 # Capabilities and ownership boundaries
 
-This document describes the **0.2.0 implementation**, including code paths that are disabled by default. It is not evidence of deployment, GPU execution, production safety or comparative performance. The default app uses labelled synthetic inventory; no cluster credentials, operator, execution access or exporter connection are enabled automatically.
+This document describes the **0.3.0 implementation**, including code paths that are disabled by default. It is not evidence of deployment, GPU execution, production safety or comparative performance. The default app uses labelled synthetic inventory; no cluster credentials, operator, execution access or exporter connection are enabled automatically.
 
 ## Implemented capabilities and authority
 
@@ -44,7 +44,7 @@ Keep node identity, extended-resource name, allocation mode and profile distinct
 
 Effective requests include active assigned Pods, including assigned Pending Pods, app-container sums, init peaks, restartable init sidecars and GPU overhead. Explicit requests take precedence; limits are a fallback only when requests are absent. Completed/failed Pods do not consume active demand. Lists are non-atomic and can immediately become stale.
 
-A fit result means an eligible single node passes the implemented GPU-count/local-policy checks at observation time. The evaluator conservatively excludes NotReady/cordoned nodes and all NoSchedule/NoExecute taints. It does not evaluate CPU, memory, topology, storage, affinity, other quotas or concurrent scheduling. It never combines several nodes to pretend a single-node request fits. Overlapping local pools describe the same resources, not additive capacity or ownership.
+A fit result means an eligible single node passes the implemented GPU-count/local-policy and optional CPU/memory request-budget checks at observation time. The evaluator conservatively excludes NotReady/cordoned nodes and all NoSchedule/NoExecute taints. Optional CPU/memory dimensions count all bound nonterminal Pods, including CPU-only work; unsupported/missing evidence remains unknown. It does not evaluate topology, storage, affinity, other quotas or concurrent scheduling. It never combines several nodes to pretend a single-node request fits. Overlapping local pools describe the same resources, not additive capacity or ownership.
 
 ## Managed control is not global isolation
 
@@ -94,7 +94,7 @@ Standalone queue exports have deterministic names but no reconciliation or owner
 
 `deploy/contracts/capabilities.schema.json` is a **legacy design artifact**, not the current capability endpoint or an authoritative schema for opt-in control. `/api/v1/capabilities` is not served. Use the current state and separate `/control/status`, `/execution/status`, `/ray/capabilities` and `/observability` routes.
 
-The namespaced draft `DavanoPool` and `DavanoOwnershipPolicy` CRDs in `deploy/contracts/` are excluded from deployment roots and unwatched. They are distinct from the implemented managed CRDs. `deploy/examples/future-contracts.yaml` is illustrative, not current operator configuration.
+The namespaced draft `AllotForgePool` and `AllotForgeOwnershipPolicy` CRDs in `deploy/contracts/` are excluded from deployment roots and unwatched. They are distinct from the implemented managed CRDs. `deploy/examples/future-contracts.yaml` is illustrative, not current operator configuration.
 
 The included [benchmark evidence](../benchmarks/README.md) covers local CPU timings over synthetic inventory, not GPU throughput or competitor superiority. Mock HTTP responses and offline exports validate tooling only. Hardware/runtime/workload/policy parity and independently repeated live runs are required before a comparative claim.
 

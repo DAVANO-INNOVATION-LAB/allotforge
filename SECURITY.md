@@ -1,12 +1,12 @@
 # Security boundary
 
-Davano 0.2.0 is a development release, **not production-certified or a secure multi-tenant execution platform**. In default inventory-only mode, inventory/advisory endpoints have no application login. The optional Kubernetes control API uses a separate administrator bearer token. The optional constrained execution broker authenticates statically provisioned, project-scoped bearer identities; it is not OIDC/SSO or an organizational identity service. When execution is enabled, unscoped inventory/advisory routes also require the administrator token and fail closed when it is absent. Keep the app on loopback or a private network behind independently reviewed TLS and authentication.
+AllotForge 0.2.0 is a development release, **not production-certified or a secure multi-tenant execution platform**. In default inventory-only mode, inventory/advisory endpoints have no application login. The optional Kubernetes control API uses a separate administrator bearer token. The optional constrained execution broker authenticates statically provisioned, project-scoped bearer identities; it is not OIDC/SSO or an organizational identity service. When execution is enabled, unscoped inventory/advisory routes also require the administrator token and fail closed when it is absent. Keep the app on loopback or a private network behind independently reviewed TLS and authentication.
 
 ## Explicitly enabled cluster writes
 
 The default app uses synthetic demo data. Live inventory reads require `DAVANO_SOURCE=kubernetes`. Control writes require that setting plus `DAVANO_CONTROL_ENABLED=true` and an administrator token at least 32 characters long. Control collection reads and mutations require the token. The status endpoint reveals configuration, not credentials or proof of successful enforcement.
 
-The separately installed controller writes real Davano CRDs, owned Kueue resources, namespace ResourceQuotas, and native ValidatingAdmissionPolicies/bindings. Its admission-policy write privilege is consequential and needs administrator review. It does not change node labels, device plugins, drivers, GPU sharing modes or hardware. Kubernetes credentials stay on the server; transport validates its CA, rereads rotating service-account tokens and refuses redirects.
+The separately installed controller writes real AllotForge CRDs, owned Kueue resources, namespace ResourceQuotas, and native ValidatingAdmissionPolicies/bindings. Its admission-policy write privilege is consequential and needs administrator review. It does not change node labels, device plugins, drivers, GPU sharing modes or hardware. Kubernetes credentials stay on the server; transport validates its CA, rereads rotating service-account tokens and refuses redirects.
 
 ## Direct tenant workload grants remain disabled
 
@@ -16,7 +16,7 @@ Arbitrary Job creation would permit borrowing service-account identities, mounte
 
 The controller has no `bind`, `escalate`, impersonation or RoleBinding create/update permission. Its namespace RoleBinding permission is restricted to get/delete for revoking UID-owned legacy grants. The inert `davano-workload-submitter` ClusterRole intentionally has no rules, including on upgrade. Existing legacy grants are not considered revoked until their bindings return 404. A blocked revocation reports `WorkloadAccess=Unknown` and retains failed readiness. Apply the updated RBAC manifests during upgrade; an image-only update cannot neutralize a shared old ClusterRole in namespaces excluded from the controller allowlist. Review those namespaces manually.
 
-Existing permissions supplied by other administrators are neither revoked nor made safe by Davano. Existing Pods are not retroactively evicted. Quota, selected GPU resource, protected-label placement and per-Pod caps are not global tenancy, host, network, storage or physical GPU isolation. Native admission type-check status is not proof that all admission caches have activated a binding.
+Existing permissions supplied by other administrators are neither revoked nor made safe by AllotForge. Existing Pods are not retroactively evicted. Quota, selected GPU resource, protected-label placement and per-Pod caps are not global tenancy, host, network, storage or physical GPU isolation. Native admission type-check status is not proof that all admission caches have activated a binding.
 
 ## Constrained execution is a separate opt-in boundary
 

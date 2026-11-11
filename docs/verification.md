@@ -1,4 +1,4 @@
-# Verification record — Davano 0.1.0
+# Verification record — AllotForge 0.1.0
 
 This is the historical **initial 0.1.0 snapshot** checked on 2026-11-11, not a current aggregate test count for the expanded 0.2.0 implementation. It is not a production-readiness certification. Later control, execution, observability, UI and benchmark features have separate tests and scope notes in their linked documentation; rerun the current suite rather than applying these old counts to the new code.
 

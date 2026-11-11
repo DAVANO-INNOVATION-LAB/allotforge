@@ -1,8 +1,10 @@
-# Davano
+# AllotForge
 
-**A GPU fleet console with explicit boundaries between observation, planning and control.**
+**Provision resources with evidence, not guesswork.**
 
-Davano combines GPU resource inventory, local advisory pools and policy, RayJob manifest planning, optional exporter/queue observation, and separately enabled Kubernetes control, namespace GPU-ceiling edits and constrained Job execution/reassignment. The UI and API run together. Version **0.2.0 is a development prototype**, not a production-certified GPU platform. License selection is pending.
+AllotForge is the new product name for this GPU resource console. The existing `davano` Python module, `DAVANO_*` configuration variables, `davano.dev/*` labels and `fleet.davano.io` CRDs remain supported unchanged for upgrade compatibility. The new `allotforge` command starts the same application.
+
+AllotForge combines GPU resource inventory, local advisory pools and policy, RayJob manifest planning, optional exporter/queue observation, and separately enabled Kubernetes control, namespace GPU-ceiling edits and constrained Job execution/reassignment. The UI and API run together. Version **0.3.0 is a development prototype**, not a production-certified GPU platform. License selection is pending.
 
 **The default is synthetic demo data with no cluster credentials or cluster writes.** Live inventory is read-only. Cluster mutation requires separate opt-in configuration and permissions; installing the inventory console does not install its operator. No live GPU cluster, device exporter or competitor platform was exercised in this build.
 
@@ -26,9 +28,11 @@ Try the demo:
 1. Inspect the fleet and open a node's resource breakdown.
 2. Create a node-label pool. This stores local metadata; it does not modify node labels.
 3. Add a local policy for a namespace and pool.
-4. Check workload fit. In the seeded fixture, `training` + `research` + NVIDIA + 4 GPUs fits `gpu-h100-02`; 8 GPUs does not. The response explicitly states **not allocated, not submitted**.
+4. Check workload fit. In the seeded fixture, `training` + `research` + NVIDIA + 4 GPUs fits `gpu-h100-02`; 8 GPUs does not. Add 8,000 CPU millicores and 32,768 MiB memory to check the complete single-node request budget. Increase CPU to 12,000 millicores to see exactly why it is blocked. The response explicitly states **not allocated, not submitted**.
 5. Inspect integration capabilities and Device telemetry. Ray manifest planning is available, Kueue control is available but disabled, and Slurm is not implemented. Demo mode fabricates no GPU telemetry or queue admission results.
 6. Open Workload launch to inspect its disabled-by-default boundary. Real submission requires a separately configured project identity and approved profile; it is not enabled by the demo.
+
+The fixture includes explicitly synthetic CPU/RAM budgets and a CPU-only preprocessing Pod so the fit check accounts for non-GPU workloads too. The AMD node intentionally omits CPU allocatable evidence to demonstrate an unknown result. These values are not hardware specifications.
 
 The fixture has 36 labelled whole-GPU resource units and a separate shared-replica node. Shared replicas never enter the whole-GPU total. One node is NotReady; its unrequested slots remain inventory, but it is excluded from the fit evaluator.
 
@@ -36,7 +40,7 @@ The fixture has 36 labelled whole-GPU resource units and a separate shared-repli
 
 | Area | Implemented scope | Default and boundary |
 | --- | --- | --- |
-| Inventory and local workspace | Kubernetes-shaped demo, optional Node/Pod reads, SQLite pools/policies, request accounting and single-node fit checks | Demo by default. Local policy remains advisory and does not reserve resources. |
+| Inventory and local workspace | Kubernetes-shaped demo, optional Node/Pod reads, SQLite pools/policies, GPU/CPU/memory request accounting and explainable single-node fit checks | Demo by default. Local policy remains advisory and does not reserve resources. |
 | Ray planning | Validated suspended RayJob export plus pure Kueue manifest builders | Planning only; no live RayJob submission or Ray lifecycle management. |
 | Observability | Pod pending reasons, optional read-only Kueue conditions and selected NVIDIA/AMD Prometheus metrics | External sources off by default. Missing, stale or conflicting evidence remains unknown; Intel telemetry unsupported. |
 | Managed control | GPUPool/GPUAccessPolicy CRDs and a separate controller for owned Kueue queues, quota and native admission guards | Control API off by default; separate operator installation and consequential RBAC required. No automatic tenant workload grants. |
@@ -50,7 +54,7 @@ Other foundations include strict FastAPI inputs, source-separated SQLite databas
 
 No live workload migration, checkpoint/data transfer, arbitrary existing-workload adoption, physical GPU movement, cross-policy atomic quota transfer, namespace CPU/memory-ceiling editor, SSO/OIDC, general interactive notebooks or shell/exec access, arbitrary workload templates, live RayJob submission, Slurm integration, cluster provisioning, GPU driver/device-plugin installation, MIG/MPS/time-slicing reconfiguration, autoscaling, multi-cluster management, immutable external audit retention or HA database design. Exporter adapters do not establish device-health certification, complete device discovery or workload-to-device ownership.
 
-A local pool is a **view**, not ownership. Policy priority is metadata, not a Kubernetes PriorityClass. “Fits” is an estimate against observed GPU requests, not a scheduler guarantee. CPU, memory, topology, storage, affinity, quotas and concurrent scheduling are not fully evaluated. MIG instances and shared replicas cannot be used in the whole-GPU fit evaluator or managed control path. Read [capability boundaries](docs/capabilities.md) before enabling writes.
+A local pool is a **view**, not ownership. Policy priority is metadata, not a Kubernetes PriorityClass. “Fits” is an estimate against observed GPU requests, not a scheduler guarantee. CPU and memory request budgets are checked when supplied. Topology, storage, affinity, quotas and concurrent scheduling remain unchecked. MIG instances and shared replicas cannot be used in the whole-GPU fit evaluator or managed control path. Read [capability boundaries](docs/capabilities.md) before enabling writes.
 
 ## Assign resources to namespaces, projects and workloads
 
@@ -104,7 +108,7 @@ When project execution is enabled, unscoped inventory, advisory, Ray-planning an
 
 Live inventory never falls back to fixtures. `/healthz` reports process health; `/readyz` reads the inventory source and fails closed on errors. Neither certifies GPU health, telemetry freshness, controller readiness or execution prerequisites. Node and pod lists are non-atomic snapshots.
 
-Resource name alone does not prove a whole GPU. Sharing/MIG evidence takes precedence. `davano.dev/allocation-mode=whole-gpu` is an administrator assertion, not a hardware detector. Validate the installed device plugin before using it; Davano never applies node labels itself.
+Resource name alone does not prove a whole GPU. Sharing/MIG evidence takes precedence. `davano.dev/allocation-mode=whole-gpu` is an administrator assertion, not a hardware detector. Validate the installed device plugin before using it; AllotForge never applies node labels itself.
 
 ## API and architecture guides
 
@@ -118,6 +122,8 @@ curl http://127.0.0.1:8080/api/v1/execution/status
 ```
 
 - [API contract and authentication boundaries](docs/api-contract.md)
+- [GPU, CPU and memory advisory fit](docs/resource-fit.md)
+- [0.3.0 release notes](docs/releases/0.3.0.md)
 - [Managed control plane](docs/control-plane.md)
 - [Constrained project execution](docs/constrained-execution.md)
 - [Namespace allocation and queued workload reassignment](docs/resource-assignment.md)

@@ -1,0 +1,99 @@
+name: Publish development prerelease
+on:
+  push:
+    branches: [main]
+    paths: [pyproject.toml, .github/workflows/release.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: allotforge-release
+  cancel-in-progress: false
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m unittest discover -s tests -v
+      - run: python -m compileall -q davano benchmarks
+      - run: npm ci --ignore-scripts && npm run check && npm test
+        working-directory: web
+  native-admission:
+    uses: ./.github/workflows/native-admission.yml
+    permissions:
+      contents: read
+  build:
+    needs: [validate, native-admission]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build exact tested source
+        run: |
+          python -m pip wheel --no-deps --wheel-dir dist .
+          git archive --format=tar.gz --prefix=allotforge/ HEAD > dist/allotforge-source.tar.gz
+          (cd dist && sha256sum *.whl *.tar.gz > SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: allotforge-release
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+  publish:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: allotforge-release
+          path: dist
+      - name: Publish tested commit as prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          test -f "docs/releases/$version.md"
+          # Never publish a stale branch head or move an existing tag.
+          head=$(gh api "repos/$GH_REPO/git/ref/heads/main" --jq '.object.sha')
+          test "$head" = "$GITHUB_SHA"
+          if gh release view "v$version" >/dev/null 2>&1; then
+            echo 'This version already has a release; no existing release or tag was changed.'
+            exit 0
+          fi
+          existing=$(git ls-remote origin "refs/tags/v$version")
+          test -z "$existing"
+          (cd dist && sha256sum --check SHA256SUMS)
+          gh release create "v$version" dist/* --target "$GITHUB_SHA" --prerelease \
+            --title "AllotForge $version" --notes-file "docs/releases/$version.md"

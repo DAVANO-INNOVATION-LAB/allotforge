@@ -2,7 +2,7 @@
 
 This opt-in broker implements **real Kubernetes batch Job create/read/cancel APIs**, but no live Kubernetes or GPU execution has been validated in this environment. Default demo mode cannot submit. Enabling the broker is a separate administrator-reviewed deployment action, not an automatic upgrade.
 
-Automatic tenant Kubernetes workload grants remain disabled. Project tokens authorize only Davano's constrained broker; GPUAccessPolicy subjects still grant no RBAC access. This is not a general multi-tenant execution platform, organization SSO, hardware isolation system, notebook service, distributed training scheduler, or arbitrary YAML runner.
+Automatic tenant Kubernetes workload grants remain disabled. Project tokens authorize only AllotForge's constrained broker; GPUAccessPolicy subjects still grant no RBAC access. This is not a general multi-tenant execution platform, organization SSO, hardware isolation system, notebook service, distributed training scheduler, or arbitrary YAML runner.
 
 ## Allowed workflow
 

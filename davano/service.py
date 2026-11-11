@@ -78,27 +78,63 @@ class FleetService:
             reasons.append("Requested vendor does not match the pool vendor.")
             blocked = True
         unknown = False
+        node_checks = []
         for node in state["nodes"]:
+            rejected, uncertain, notes = False, False, []
             if not node["schedulable"]:
-                continue
-            for resource in pool_resources(pool, node):
-                if req.vendor != "Any" and resource["vendor"] != req.vendor:
-                    continue
-                if resource["available"] is None:
-                    unknown = True
-                    continue
-                if resource["available"] >= req.gpu_count:
-                    candidates.append({"id": node["id"], "available": resource["available"], "resource": resource["name"]})
+                rejected = True
+                notes.append("Node is not eligible: readiness, cordon, or blocking taints.")
+            resources = [r for r in pool_resources(pool, node) if req.vendor == "Any" or r["vendor"] == req.vendor]
+            matching = [r for r in resources if r["available"] is not None and r["available"] >= req.gpu_count]
+            if not resources:
+                rejected = True
+                notes.append("No verified whole-GPU resource matches the pool selector and requested vendor.")
+            elif not matching:
+                if any(r["available"] is None for r in resources):
+                    uncertain = True
+                    notes.append("Whole-GPU availability is unknown.")
+                else:
+                    rejected = True
+                    notes.append("Insufficient whole-GPU availability on this single node.")
+            else:
+                notes.append("Enough observed whole-GPU units on this node.")
+            for dimension, label in (("cpu_millicores", "CPU millicores"), ("memory_mib", "memory MiB")):
+                amount = getattr(req, dimension)
+                available = node.get("compute", {}).get(dimension, {}).get("available")
+                if amount is None:
+                    notes.append(f"{label} not requested; not checked.")
+                elif amount == 0:
+                    notes.append(f"Zero {label} requested; no additional capacity required.")
+                elif available is None:
+                    uncertain = True
+                    notes.append(f"{label} availability is unknown; cannot verify requested {amount}.")
+                elif available < amount:
+                    rejected = True
+                    notes.append(f"Insufficient {label}: requested {amount}, observed available {available}.")
+                else:
+                    notes.append(f"{label} fits: requested {amount}, observed available {available}.")
+            if blocked:
+                rejected = True
+                notes.append("Local policy or pool vendor checks block this request.")
+            status = "rejected" if rejected else "unknown" if uncertain else "eligible"
+            node_checks.append({"id": node["id"], "status": status, "reasons": notes})
+            if status == "unknown":
+                unknown = True
+            elif status == "eligible":
+                for resource in matching:
+                    candidates.append({"id": node["id"], "available": resource["available"], "resource": resource["name"],
+                                       "cpu_available_millicores": node.get("compute", {}).get("cpu_millicores", {}).get("available"),
+                                       "memory_available_mib": node.get("compute", {}).get("memory_mib", {}).get("available")})
         if blocked:
             verdict = "blocked"
             candidates = []
         elif candidates:
             verdict = "fits"
-            reasons.append("Observed requests leave enough whole-GPU scheduling units on at least one eligible node.")
+            reasons.append("Observed requests leave enough whole-GPU units and any requested CPU/memory on at least one eligible node.")
         elif unknown:
             verdict = "unknown"
             reasons.append("Unknown resource counts prevent a safe fit result.")
         else:
             verdict = "blocked"
-            reasons.append("No eligible single node has enough verified unrequested whole-GPU resources. Resources are never combined across nodes.")
-        return {"verdict": verdict, "advisory_only": True, "allocated": False, "submitted": False, "source": state["meta"]["source"], "observed_at": state["meta"]["observed_at"], "gpu_count": req.gpu_count, "pool_id": req.pool_id, "candidate_nodes": candidates, "policy_ids": [p["id"] for p in policy_matches], "reasons": reasons, "limitations": ["No resources were allocated and no workload was submitted.", "Advisory only: local policies do not enforce Kubernetes admission, priority, quota, or scheduling.", "Does not check CPU, memory, topology, affinity, storage, quotas, or concurrent scheduling; any NoSchedule/NoExecute taint is conservatively excluded.", "Unrequested GPU resources are not utilization or an exclusive reservation."]}
+            reasons.append("No eligible single node has enough verified unrequested resources for the requested dimensions. Resources are never combined across nodes.")
+        return {"verdict": verdict, "advisory_only": True, "allocated": False, "submitted": False, "source": state["meta"]["source"], "observed_at": state["meta"]["observed_at"], "gpu_count": req.gpu_count, "cpu_millicores": req.cpu_millicores, "memory_mib": req.memory_mib, "node_checks": node_checks, "pool_id": req.pool_id, "candidate_nodes": candidates, "policy_ids": [p["id"] for p in policy_matches], "reasons": reasons, "limitations": ["No resources were allocated and no workload was submitted.", "Advisory only: local policies do not enforce Kubernetes admission, priority, quota, or scheduling.", "CPU and memory are checked only when requested, using conservative rounded observed requests, not utilization. Does not check topology, affinity, storage, quotas, Pod count, or concurrent scheduling; any NoSchedule/NoExecute taint is conservatively excluded.", "Unrequested GPU resources are not utilization or an exclusive reservation."]}

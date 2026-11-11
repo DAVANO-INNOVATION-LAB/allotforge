@@ -45,3 +45,5 @@ class EvaluationRequest(StrictModel):
     namespace: str = Field(pattern=ID_PATTERN, max_length=63)
     gpu_count: StrictInt = Field(ge=1, le=1024)
     vendor: Vendor = "Any"
+    cpu_millicores: StrictInt | None = Field(default=None, ge=0, le=1_000_000_000)
+    memory_mib: StrictInt | None = Field(default=None, ge=0, le=1_000_000_000_000)

@@ -1,4 +1,4 @@
-# Davano API v1 (0.2.0 development prototype)
+# AllotForge API v1 (0.3.0 development prototype)
 
 Responses use JSON. OpenAPI at `/openapi.json` and `/docs` describes current input schemas. Inputs reject unknown fields and constrain identifiers/counts. Mutating requests must be same-origin and bounded to 64 KiB; POST/PUT/PATCH require `application/json`. These checks are not a substitute for authentication.
 
@@ -33,7 +33,7 @@ An abbreviated **synthetic demo** response is:
     "observed_at": "<inventory observation timestamp>",
     "read_only_cluster": true,
     "enforcement": "advisory-only",
-    "version": "0.2.0"
+    "version": "0.3.0"
   },
   "summary": {
     "nodes": 6,
@@ -51,6 +51,7 @@ An abbreviated **synthetic demo** response is:
 This excerpt omits warnings and collections. `meta.read_only_cluster` and `meta.enforcement` describe this inventory/advisory view, **not** whether a separate control/execution route is enabled. Demo timestamps are fixture observations, not cluster contact or GPU measurements.
 
 - `nodes[].resources` preserves resource name, vendor, mode and capacity/allocatable/requested/available units. Node-level `gpu_*` and `summary.whole_gpu_*` fields count verified **whole-GPU resource units only**, not MIG instances or shared replicas.
+- `nodes[].compute.cpu_millicores` and `nodes[].compute.memory_mib` each report `capacity`, `allocatable`, `requested` and `available`. They include CPU-only Pods and preserve unknown evidence as `null`; these are request budgets, not live utilization.
 - `available` is observed allocatable minus effective active assigned-Pod requests, not utilization, reservation or guaranteed idle physical devices. Unknown counts are `null`.
 - `pools` and `policies` are the local SQLite records with derived membership/accounting. Overlapping pools are not additive resources. These are not managed GPUPool/GPUAccessPolicy objects.
 - `workloads` are observed Pod/resource rows, not submitted Jobs. They preserve namespace/name/resource, phase, assigned node, GPU request count, optional queue label, sanitized `conditions` and `pending_reasons`. A queue label is not admission evidence. No secret/env/Pod-template or free-form controller message is returned.
@@ -82,12 +83,14 @@ Priority low/normal/high is metadata, not PriorityClass. Missing pool returns 40
 ### `POST /api/v1/evaluate`
 
 ```json
-{"pool_id":"training","namespace":"research","gpu_count":4,"vendor":"NVIDIA"}
+{"pool_id":"training","namespace":"research","gpu_count":4,"vendor":"NVIDIA","cpu_millicores":8000,"memory_mib":32768}
 ```
 
-Response includes `verdict` (`fits`, `blocked` or `unknown`), `source`, `observed_at`, `gpu_count`, `pool_id`, `policy_ids`, `candidate_nodes`, `reasons` and `limitations`. It always returns `advisory_only: true`, `allocated: false`, `submitted: false`.
+Optional `cpu_millicores` and `memory_mib` are strict nonnegative integers. Omission or `null` skips that dimension; zero is trivially satisfied. Maximum values are 1,000,000,000 millicores and 1,000,000,000,000 MiB. Positive requests with unknown evidence cannot produce a fit.
 
-One eligible node must fit. All matching policies apply, strictest cap wins, and no matching policy blocks. NotReady, cordoned and NoSchedule/NoExecute-tainted nodes are excluded conservatively. Effective GPU requests account for init/sidecar behavior and overhead. CPU, memory, affinity, storage, topology, other quotas and concurrent schedulers remain unproven.
+Response includes `verdict` (`fits`, `blocked` or `unknown`), `source`, `observed_at`, `gpu_count`, `pool_id`, `policy_ids`, `candidate_nodes`, `node_checks`, `reasons` and `limitations`, plus echoed compute requests. `node_checks` reports each observed node with `id`, `status` (`eligible`, `rejected`, `unknown`) and human-readable reasons. Candidates preserve GPU fields and add `cpu_available_millicores` and `memory_available_mib`. It always returns `advisory_only: true`, `allocated: false`, `submitted: false`.
+
+One eligible node must fit. All matching policies apply, strictest cap wins, and no matching policy blocks. NotReady, cordoned and NoSchedule/NoExecute-tainted nodes are excluded conservatively. Effective GPU requests account for init/sidecar behavior and overhead. Optional CPU/memory checks count all bound nonterminal Pods, not only GPU Pods. Affinity, storage, topology, other quotas and concurrent schedulers remain unchecked. See [accounting and unknown cases](resource-fit.md).
 
 ## Ray manifest planning
 

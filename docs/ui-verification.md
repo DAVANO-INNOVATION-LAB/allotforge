@@ -2,7 +2,7 @@
 
 ## Implemented
 
-Davano's runtime UI has no external JavaScript, CSS, font, CDN, bundler or Node-server dependency. It is served by the same FastAPI application.
+AllotForge's runtime UI has no external JavaScript, CSS, font, CDN, bundler or Node-server dependency. It is served by the same FastAPI application.
 
 - Eight navigable views: overview, GPU inventory, local resource pools, observed workloads, local advisory policies, integrations, managed cluster control, and local configuration activity.
 - Explicit source provenance, manual refresh, failure/retry, snapshot export, inventory/workload search and filters, node/resource details, and responsive navigation.

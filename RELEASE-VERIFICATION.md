@@ -1,30 +1,25 @@
-# Davano 0.2.0 source archive verification
+# AllotForge 0.3.0 local verification
 
-Verified 2026-11-11T18:01:59.503868+00:00 against the source ZIP snapshot from which this repository was prepared.
+Verified against the 0.3.0 working tree on 2026-11-11 before publication. This file records local verification, not a claim that remote CI or GPU hardware testing has passed.
 
-## Passed
+## Passed locally
 
-- Full Python unit/API-double/static-manifest suite: **273 tests passed**.
-- UI suite: **132 checks passed**: 50 DOM/API, 27 control, 31 execution/telemetry, 24 assignment/reassignment.
-- Python compilation: `davano` and `benchmarks` passed.
-- JavaScript syntax: `app.js`, `features.js`, `operations.js`, `assignments.js` passed.
-- Benchmark evidence refreshed: five repetitions of 200 CPU operations per operation type, with 20 warm-ups, on the six-node/nine-Pod synthetic fixture.
-- Benchmark source SHA-256: `fa1a377ae18ece9c1d6657996714bd51f3bd8007934ff98368d7d63947eaf314`.
-- Source selection excludes dependency directories, caches, runtime databases, private configuration, credentials, stale build output and superseded screenshots.
-- Original ZIP contents were byte-verified against the stable source snapshot. The repository `SOURCE-MANIFEST.json` was regenerated for the published file selection.
+- Full Python unit/API-double/static-manifest suite: **288 tests passed**.
+- UI DOM/API suite: **143 checks passed** (61 main UI, 27 control, 31 execution/telemetry, 24 assignment/reassignment).
+- Python compilation: `davano` and `benchmarks`.
+- JavaScript syntax: app, features, operations and assignments.
+- Wheel build: `davano-0.3.0-py3-none-any.whl`; the package/import name is retained for compatibility, with an additional `allotforge` command.
+- Independent review of request-accounting changes and release workflow. Malformed GPU-map and CPU-only Pod-condition regressions found during review were fixed and covered by tests.
+- Three labelled static HTML/CSS previews exercise synthetic fit, CPU-blocked and unknown-CPU scenarios. These are not browser QA or live cluster evidence. Preview files are generated artifacts and excluded from the repository source manifest.
 
-## Included evidence and reproduction
+## Release gates
 
-- `benchmarks/results/local-cpu-2026-11-11.json`: raw timing samples, timestamps, environment and source/fixture hashes.
-- `benchmarks/results/environment-2026-11-11.json`: local capability probe.
-- `benchmarks/README.md`: benchmark methods, commands, comparison gates and staging prerequisites.
-- `web/tests/GAP-VALIDATION.md`: UI validation scope and reproduction.
-- The source ZIP includes stage 1–9 labelled static HTML/CSS fixture previews. Generated previews are excluded from this repository; reproduce them using `web/tests/render-gap-previews.py`. They are not real browser screenshots or live GPU/cluster evidence.
+The release workflow tests Python 3.11/3.12 and UI contracts, runs the existing disposable-kind native-admission/Kustomize checks, then builds exact-commit source and wheel artifacts. Only the publishing job has contents-write permission. It checks the current main head, verifies artifact checksums, refuses an existing tag and creates a development prerelease targeted to that tested commit. Check the exact commit's GitHub Actions result for remote verification; this local record does not anticipate its outcome.
 
-Run the repository README's Python and UI checks after installing its pinned development dependencies in your own development environment. This validation reused an existing development-only jsdom install; the ZIP contains the package lock but no dependency folders.
+## Not verified locally
 
-## Explicitly not verified
+No real GPU, live cluster admission/scheduling, Kueue/KAI runtime, hardware allocation, migration, exporter, production tenancy or competitor platform was exercised. Local Chromium could not start due to environment socket restrictions; the available browser could not open the local app. DOM/API checks and labelled static previews do not certify actual browser layout or interaction behavior. No cloud GPU resources were provisioned, credentials generated or production cluster changed.
 
-No live GPU workloads, competitor application deployments, real Kubernetes/OpenShift admission/scheduling, Kueue/KAI integration, actual GPU allocation/migration, container execution, or real-browser interaction/layout test ran here. No cluster was changed, credentials generated, new software installed, or money spent by this validation pass. Live GPU/competitor benchmarking still requires an explicitly authorized staging target and bounded workload scope.
+The historical files in `benchmarks/results/` measure the prior 0.2.0 source/fixture and are not fresh performance results for 0.3.0. They establish no GPU speedup. License selection remains pending; no open-source license grant is asserted.
 
-CPU results measure real in-process wall time over synthetic inputs and establish no GPU performance advantage. Static checks and mocked transports do not certify production safety. License selection remains pending; this bundle asserts no open-source license grant.
+Reproduce with the commands in README.md. Static preview tooling uses optional pinned development dependencies from `web/tests/requirements-render.txt`.

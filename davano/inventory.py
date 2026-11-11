@@ -49,18 +49,27 @@ def quantity(value):
 
 
 def resource_requests(container):
+    if not isinstance(container, dict):
+        raise InventoryUnavailable("Malformed Pod container; refusing incomplete resource accounting.")
     resources = container.get("resources", {})
+    if not isinstance(resources, dict):
+        raise InventoryUnavailable("Malformed Pod resource map; refusing incomplete resource accounting.")
     requests = resources.get("requests", {})
     limits = resources.get("limits", {})
+    if not isinstance(requests, dict) or not isinstance(limits, dict):
+        raise InventoryUnavailable("Malformed Pod requests or limits; refusing incomplete resource accounting.")
     return {k: quantity(requests.get(k, limits.get(k))) for k in set(requests) | set(limits) if gpu_vendor(k)}
 
 
 def pod_requests(pod):
     """Effective requests: app + restartable init sidecars, init peaks, overhead."""
     spec = pod.get("spec", {})
-    containers = [resource_requests(c) for c in spec.get("containers", [])]
-    inits = [(resource_requests(c), c.get("restartPolicy") == "Always") for c in spec.get("initContainers", [])]
-    overhead = {k: quantity(v) for k, v in spec.get("overhead", {}).items() if gpu_vendor(k)}
+    apps, init_containers, pod_overhead = spec.get("containers", []), spec.get("initContainers", []), spec.get("overhead", {})
+    if not isinstance(apps, list) or not isinstance(init_containers, list) or not isinstance(pod_overhead, dict):
+        raise InventoryUnavailable("Malformed Pod containers or overhead; refusing incomplete resource accounting.")
+    containers = [resource_requests(c) for c in apps]
+    inits = [(resource_requests(c), c.get("restartPolicy") == "Always") for c in init_containers]
+    overhead = {k: quantity(v) for k, v in pod_overhead.items() if gpu_vendor(k)}
     keys = set(overhead)
     for d in containers + [d for d, _ in inits]:
         keys.update(d)
@@ -117,6 +126,8 @@ def open_without_redirect(request, *, context, timeout):
 
 def normalize(nodes, pods):
     from .observability import conditions, pending_reasons
+    from .compute import compute_usage, node_compute
+    compute_requested = compute_usage(pods)
     requested = defaultdict(lambda: defaultdict(int))
     workloads = []
     for pod in pods:
@@ -167,7 +178,7 @@ def normalize(nodes, pods):
         modes = set(r["mode"] for r in resources)
         vendors = set(r["vendor"] for r in resources)
         model = labels.get("nvidia.com/gpu.product") or labels.get("amd.com/gpu.product-name") or labels.get("davano.dev/model") or "Not reported"
-        result.append({"id": name, "name": name, "status": "Ready" if ready else "NotReady", "schedulable": ready and not spec.get("unschedulable", False) and not blocking, "vendor": next(iter(vendors)) if len(vendors) == 1 else "Mixed", "model": model, "mode": next(iter(modes)) if len(modes) == 1 else "mixed", "gpu_capacity": total("capacity"), "gpu_allocatable": total("allocatable"), "gpu_requested": total("requested"), "gpu_available": total("available"), "zone": labels.get("topology.kubernetes.io/zone", "Not reported"), "labels": labels, "taints": taints, "resources": resources, "warnings": warnings, "pool_ids": []})
+        result.append({"id": name, "name": name, "status": "Ready" if ready else "NotReady", "schedulable": ready and not spec.get("unschedulable", False) and not blocking, "vendor": next(iter(vendors)) if len(vendors) == 1 else "Mixed", "model": model, "mode": next(iter(modes)) if len(modes) == 1 else "mixed", "gpu_capacity": total("capacity"), "gpu_allocatable": total("allocatable"), "gpu_requested": total("requested"), "gpu_available": total("available"), "zone": labels.get("topology.kubernetes.io/zone", "Not reported"), "labels": labels, "taints": taints, "resources": resources, "warnings": warnings, "pool_ids": [], "compute": node_compute(status, compute_requested.get(name, {}), warnings)})
     return result, workloads
 
 

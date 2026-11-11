@@ -31,7 +31,7 @@ Target Kubernetes 1.30+ with stable ValidatingAdmissionPolicy, or an OpenShift r
 Before installation:
 
 1. Choose an authorized nonproduction cluster and verify its context, backup policy, native admission configuration, NodeRestriction, device-plugin modes, and existing tenant permissions.
-2. Build, scan, sign and pin a Davano container digest. The manifests use an intentionally unpinned development image placeholder; replace it.
+2. Build, scan, sign and pin a AllotForge container digest. The manifests use an intentionally unpinned development image placeholder; replace it.
 3. Choose dedicated tenant namespaces, configure `DAVANO_MANAGED_NAMESPACES`, and apply the narrowly scoped Role/RoleBinding examples for **each** namespace. The operator does not create tenant namespaces or silently grant itself namespace access.
 4. Apply the operator CRDs and deployment in `deploy/operator`. `deploy/operator-openshift` reuses the restricted nonroot deployment without fixed UID/fsGroup; OpenShift SCC assigns them. This has not been validated on an OpenShift cluster.
 5. Review `deploy/examples/managed-resources.yaml`. Pool placement and resource name are immutable, and namespaces support one access policy each. Do not install the unrelated legacy draft CRDs from `deploy/contracts`.

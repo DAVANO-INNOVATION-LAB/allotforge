@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "davano"
-version = "0.2.0"
-description = "GPU inventory, Ray manifest planning and opt-in Kubernetes guardrail reconciliation"
+version = "0.3.0"
+description = "AllotForge resource planning, GPU inventory and opt-in Kubernetes guardrails"
 requires-python = ">=3.11"
 dependencies = ["fastapi==0.141.1", "uvicorn==0.52.1", "pydantic==2.13.4"]
 
@@ -18,4 +18,5 @@ package-dir = {"davano.web" = "web", "davano.fixtures" = "fixtures"}
 "davano.fixtures" = ["*.json"]
 
 [project.scripts]
+allotforge = "davano.app:main"
 davano = "davano.app:main"

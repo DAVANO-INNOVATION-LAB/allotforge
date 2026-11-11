@@ -35,7 +35,7 @@ def create_app(source=None, db_path=None, inventory=None):
         yield
         store.close()
 
-    app = FastAPI(title="Davano GPU fleet API", version=__version__, description="GPU inventory, local advisory planning and explicitly enabled Kubernetes desired-state control. Automatic tenant RBAC grants remain disabled; separately configured project execution uses administrator-approved profiles only.", lifespan=lifespan)
+    app = FastAPI(title="AllotForge resource API", version=__version__, description="GPU inventory, local advisory planning and explicitly enabled Kubernetes desired-state control. Automatic tenant RBAC grants remain disabled; separately configured project execution uses administrator-approved profiles only.", lifespan=lifespan)
     app.state.fleet = fleet
 
     execution_enabled = os.getenv("DAVANO_EXECUTION_ENABLED", "false").lower() == "true"

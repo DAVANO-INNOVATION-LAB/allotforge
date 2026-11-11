@@ -22,7 +22,7 @@ Use an independently authenticated trusted-operator ingress. The fleet/observabi
 
 Existing inventory RBAC remains unchanged: Nodes and Pods only. `deploy/observability/queue-observer-clusterrole.yaml` is a separate **unbound review template**, not referenced by any kustomization. It grants only Kueue resource `get,list` and explicit API discovery `get`. An authorized operator must separately review and bind the role to the selected observer identity. Do not bind controller write permissions just to observe queues. No role was installed or bound while developing this feature.
 
-Prometheus authentication, vendor exporter installation, firewall rules and scrape configuration are external prerequisites. They are not created by Davano. Match the exporter and driver/DCGM/ROCm versions supported by your hardware and vendor.
+Prometheus authentication, vendor exporter installation, firewall rules and scrape configuration are external prerequisites. They are not created by AllotForge. Match the exporter and driver/DCGM/ROCm versions supported by your hardware and vendor.
 
 ## Telemetry semantics
 
@@ -63,7 +63,7 @@ Five additional integration tests run an ephemeral loopback HTTPS server with sy
 
 ## Upstream references checked 2026-11-11
 
-- [NVIDIA DCGM Exporter releases](https://github.com/NVIDIA/dcgm-exporter/releases): 4.9.0 changes default names/units. Davano normalizes each supported name explicitly.
+- [NVIDIA DCGM Exporter releases](https://github.com/NVIDIA/dcgm-exporter/releases): 4.9.0 changes default names/units. AllotForge normalizes each supported name explicitly.
 - [NVIDIA exporter metrics and labels](https://docs.nvidia.com/datacenter/dcgm/latest/reference/dcgm-exporter-metrics.html): exporter coverage depends on selected fields, hardware and configuration.
 - [AMD 1.5.3 metric meanings](https://instinct.docs.amd.com/projects/device-metrics-exporter/en/release-v1.5.3/configuration/metricslist.html) and [configuration](https://instinct.docs.amd.com/projects/device-metrics-exporter/en/release-v1.5.3/configuration/configmap.html).
 - [Kueue v1beta2 API](https://kueue.sigs.k8s.io/v0.17/docs/reference/kueue.v1beta2/): conditions describe observed state, not execution guarantees.
