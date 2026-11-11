@@ -1,0 +1,88 @@
+/* Deterministic UI transport fixtures. These are not live GPU/cluster results. */
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {JSDOM}=require('jsdom');
+const root=path.resolve(__dirname,'..');
+const dom=new JSDOM(fs.readFileSync(path.join(root,'index.html'),'utf8'),{url:'http://localhost/#launch',runScripts:'outside-only',pretendToBeVisual:true});
+const w=dom.window,d=w.document;
+w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};
+w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'));};
+w.URL.createObjectURL=()=> 'blob:test';w.URL.revokeObjectURL=()=>{};
+let enabled=false,requests=[],hold=null,failList=false,submitUnknown=false,previewWrongTarget=false,checks=0,canSubmit=true,inventoryDenied=false,existingJob=false;
+const token='execution-contract-fixture-not-a-real-credential';
+const state={meta:{source:'demo',source_label:'Contract fixture · not live',observed_at:'2026-11-11T12:00:00Z'},summary:{whole_gpu_allocatable:8,whole_gpu_requested:2,whole_gpu_available:6,pending_workloads:1},nodes:[],pools:[],policies:[],workloads:[{name:'training-pod',namespace:'research',status:'Pending',gpu_count:2,resource:'nvidia.com/gpu',pending_reasons:[{source:'PodScheduled',reason:'Unschedulable',detail:'Insufficient nvidia.com/gpu'}]}],events:[],integrations:[],observability:{source:'contract-fixture',observed_at:'2026-11-11T12:00:00Z',read_only:true,telemetry:{status:'disabled',detail:'No telemetry fixture values are substituted for disabled measurements.',stale_after_seconds:120,devices:[],warnings:[]},queues:{status:'disabled',detail:'No live Kueue API configured.',workloads:[]}}};
+const project={id:'research',namespace:'research-gpu',profiles:[{id:'approved-training',label:'Approved training',image:'registry.example.test/trainer@sha256:'+'a'.repeat(64),gpu_max:4,cpu_millicores:2000,memory_mib:8192,max_runtime_seconds:3600}],can_submit:true};
+let jobs=[];
+const response=(status,data)=>({ok:status>=200&&status<300,status,json:async()=>JSON.parse(JSON.stringify(data))});
+w.fetch=async(url,options={})=>{
+ const method=options.method||'GET',body=options.body?JSON.parse(options.body):null;requests.push({url,method,body,headers:options.headers});
+ if(url==='/api/v1/state')return inventoryDenied?response(403,{detail:'Cluster-wide inventory requires administrator authentication'}):response(200,state);
+ if(url==='/api/v1/control/status')return response(200,{enabled:false});
+ if(url==='/api/v1/ray/capabilities')return response(200,{status:'manifest-planning'});
+ if(url==='/api/v1/execution/status')return response(200,{enabled,mode:enabled?'configured':'disabled',live_validation:'not-performed',limitations:['Transport fixture only. No live cluster or GPU validation has run.']});
+ if(!enabled)return response(409,{detail:'Execution is disabled'});
+ if(options.headers.Authorization!==`Bearer ${token}`)return response(401,{detail:'Execution authentication required'});
+ if(url==='/api/v1/execution/reassignments')return response(200,{items:[]});
+ if(url==='/api/v1/execution/projects')return response(200,{items:[{...project,can_submit:canSubmit}]});
+ if(url.endsWith('/preview')){if(hold)await hold;return response(200,{submitted:false,manifest:{apiVersion:'batch/v1',kind:'Job',metadata:{name:body.name,namespace:previewWrongTarget?'wrong-target':project.namespace},spec:{template:{spec:{containers:[{name:'workload',image:project.profiles[0].image,resources:{limits:{'nvidia.com/gpu':body.gpu_count}}}]}}}},checks:['Pinned image','Project namespace','Current guardrails']});}
+ if(url.endsWith('/cancel'))return response(200,{deletion_requested:true,deleted:false,workload:jobs[0]});
+ if(url.endsWith('/workloads')&&method==='POST'){if(hold)await hold;if(existingJob)return response(201,{submitted:false,allocated:false,idempotent:true,workload:{name:body.name}});if(submitUnknown)throw new Error('The request timed out and its outcome may be unknown.');const item={name:body.name,uid:'fixture-uid',resourceVersion:'7',project:project.id,namespace:project.namespace,profile:body.profile,gpu_count:body.gpu_count,phase:'Pending',conditions:[],created_at:'2026-11-11T12:00:01Z',allocation_confirmed:false};jobs.push(item);return response(201,{submitted:true,allocated:false,workload:item});}
+ if(url.endsWith('/workloads')){if(hold)await hold;if(failList)return response(503,{detail:'Project list unavailable'});return response(200,{source:'kubernetes',items:jobs});}
+ return response(404,{detail:'Unknown fixture path'});
+};
+const tick=()=>new Promise(r=>setTimeout(r,0));
+const click=s=>{const e=d.querySelector(s);assert.ok(e,s);e.click();};
+const fill=(name,value,notify=true)=>{const e=d.querySelector(`[name="${name}"]`);assert.ok(e,name);e.value=value;if(notify)e.dispatchEvent(new w.Event('input',{bubbles:true}));};
+const submit=async id=>{d.getElementById(id).dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await tick();};
+const check=(name,fn)=>{fn();checks++;console.log('PASS '+name);};
+const text=()=>d.getElementById('main').textContent;
+const nav=async page=>{w.location.hash=page;await tick();};
+function capture(name){if(!process.env.DAVANO_CAPTURE_STATIC)return;const clone=d.documentElement.cloneNode(true);for(const original of d.querySelectorAll('input,textarea,select')){const copy=original.id?clone.querySelector('#'+original.id):null;if(!copy)continue;if(original.type==='password'){copy.setAttribute('value','');continue;}if(original.tagName==='SELECT'){for(const option of copy.options)option.toggleAttribute('selected',option.value===original.value);}else if(original.tagName==='TEXTAREA')copy.textContent=original.value;else copy.setAttribute('value',original.value);}fs.mkdirSync(path.join(root,'../screenshots/gap-build'),{recursive:true});fs.writeFileSync(path.join(root,'../screenshots/gap-build',name+'.dom.html'),'<!doctype html>'+clone.outerHTML);}
+(async()=>{
+ w.eval(['features.js','operations.js','assignments.js','app.js'].map(f=>fs.readFileSync(path.join(root,f),'utf8')).join('\n'));await tick();
+ check('disabled execution never renders a submit form',()=>{assert.match(text(),/Workload execution is disabled/);assert.equal(d.querySelector('#execution-form'),null);});capture('stage-1-safe-workload-launch');
+ click('[data-action="connect-execution"]');check('disabled authority cannot collect execution credential',()=>assert.equal(d.querySelector('#execution-token').disabled,true));click('[data-action="close-dialog"]');
+ enabled=true;click('[data-action="refresh-execution"]');await tick();click('[data-action="connect-execution"]');fill('token',token);await submit('execution-credentials-form');
+ check('scoped authorization reveals only approved profiles and fixed namespace',()=>{assert.match(text(),/research-gpu/);assert.equal(d.querySelectorAll('[name="profile"] option').length,1);assert.equal(d.querySelector('[name="namespace"]'),null);assert.equal(d.querySelector('[name="image"]'),null);});
+ check('execution credential is memory-only and not leaked in markup',()=>{assert.equal(w.localStorage.length,0);assert.equal(w.sessionStorage.length,0);assert.doesNotMatch(d.body.textContent,new RegExp(token));assert.equal(d.querySelector('#execution-token').value,'');});
+ fill('name','safe-training');await submit('execution-form');
+ check('preview is explicitly unsubmitted and review is required',()=>{assert.match(d.getElementById('execution-preview').textContent,/Not submitted. Not allocated/);assert.equal(d.querySelector('[data-action="submit-execution"]').disabled,true);assert.equal(requests.filter(r=>r.method==='POST'&&r.url.endsWith('/workloads')).length,0);});capture('stage-3-reviewed-job-preview');
+ fill('gpu_count','2');check('editing a reviewed field invalidates preview',()=>assert.equal(d.getElementById('execution-preview').textContent,''));
+ previewWrongTarget=true;await submit('execution-form');check('mismatched preview namespace blocks submission',()=>{assert.match(d.getElementById('execution-form-error').textContent,/Unexpected preview target/);assert.equal(d.querySelector('[data-action="submit-execution"]'),null);});previewWrongTarget=false;
+ let release;hold=new Promise(r=>release=r);submit('execution-form');await tick();fill('gpu_count','3');release();hold=null;await tick();
+ check('input changes during pending preview suppress stale plan',()=>assert.equal(d.getElementById('execution-preview').textContent,''));
+ await submit('execution-form');click('#execution-reviewed');hold=new Promise(r=>release=r);click('[data-action="submit-execution"]');click('[data-action="submit-execution"]');
+ check('double-click cannot duplicate a submission',()=>assert.equal(requests.filter(r=>r.method==='POST'&&r.url.endsWith('/workloads')).length,1));release();hold=null;await tick();await tick();
+ check('successful submission displays observed phase, not allocation success',()=>{assert.match(text(),/safe-training/);assert.match(text(),/Pending/);assert.match(d.getElementById('toast').textContent,/allocation is not confirmed/);});
+ click('[data-execution-job="0"]');click('[data-action="confirm-execution-cancel"]');fill('confirmation','wrong');await submit('execution-cancel-form');check('cancellation requires exact name',()=>{assert.match(d.getElementById('form-error').textContent,/exact Job name/);assert.equal(requests.filter(r=>r.url.endsWith('/cancel')).length,0);});
+ jobs[0].uid='replacement-uid';jobs[0].resourceVersion='8';fill('confirmation','safe-training');await submit('execution-cancel-form');
+ check('cancellation uses original identity and reports requested not deleted',()=>{assert.deepEqual(requests.find(r=>r.url.endsWith('/cancel')).body,{uid:'fixture-uid',resourceVersion:'7'});assert.match(d.getElementById('toast').textContent,/requested.*deletion is observed/);});
+ fill('name','unknown-outcome');await submit('execution-form');click('#execution-reviewed');submitUnknown=true;click('[data-action="submit-execution"]');await tick();
+ check('unknown submit outcome disables automatic retry until refresh',()=>{assert.match(d.getElementById('execution-form-error').textContent,/Automatic retry is disabled/);assert.equal(d.querySelector('[data-action="submit-execution"]'),null);assert.equal(d.querySelector('#execution-form [type="submit"]').disabled,true);});submitUnknown=false;
+ failList=true;click('[data-action="refresh-execution"]');await tick();check('failed read removes stale project jobs',()=>{assert.match(text(),/Project list unavailable/);assert.equal(d.querySelector('[data-execution-job]'),null);});failList=false;
+ hold=new Promise(r=>release=r);click('[data-action="refresh-execution"]');await tick();click('[data-action="forget-execution"]');release();hold=null;await tick();
+ check('disconnect invalidates pending project reads and clears session data',()=>{assert.equal(d.querySelector('#execution-form'),null);assert.equal(d.querySelector('[data-execution-job]'),null);assert.match(text(),/No execution session/);});
+ click('[data-action="connect-execution"]');fill('token',token);click('[data-action="close-dialog"]');check('cancel clears sensitive execution input',()=>assert.equal(d.querySelector('#execution-token').value,''));
+ canSubmit=false;click('[data-action="connect-execution"]');fill('token',token);await submit('execution-credentials-form');fill('name','viewer-plan');await submit('execution-form');click('#execution-reviewed');
+ check('viewer can preview but cannot submit',()=>{assert.match(text(),/Preview ready for review/);assert.equal(d.querySelector('[data-action="submit-execution"]').disabled,true);});
+
+ inventoryDenied=true;await nav('overview');click('#refresh');await tick();check('restricted inventory directs users to scoped execution, not a false outage',()=>{assert.match(text(),/Administrator inventory is restricted/);assert.doesNotMatch(text(),/Connection failed/);assert.equal(d.querySelectorAll('.metric').length,0);});click('[data-action="go-launch"]');await tick();check('project execution remains usable when inventory is restricted',()=>assert.match(text(),/Launch with guardrails/));inventoryDenied=false;click('#refresh');await tick();
+ canSubmit=true;click('[data-action="refresh-execution"]');await tick();fill('name','idempotent-job');await submit('execution-form');click('#execution-reviewed');existingJob=true;click('[data-action="submit-execution"]');await tick();check('idempotent existing response does not claim a new submission',()=>assert.match(d.getElementById('toast').textContent,/Identical Job already exists. No new submission/));existingJob=false;
+ await nav('telemetry');check('disabled telemetry presents unknown instead of fabricated zeros',()=>{assert.match(text(),/No device signal is invented/);assert.match(text(),/Unknown/);assert.equal(d.querySelectorAll('.device-card').length,0);});capture('stage-2-telemetry-disabled');
+ const metric=(value,status='fresh',unit='percent',scope='device')=>({value,status,unit,scope,sample_at:'2026-11-11T12:00:00Z',source_metric:'CONTRACT_FIXTURE_METRIC',reason:status==='fresh'?'Contract fixture only':status==='stale'?'Sample is older than freshness limit':'No device-level sample'});
+ state.observability.telemetry={status:'connected',detail:'CONTRACT FIXTURE ONLY. This is synthetic UI test data, not a connected exporter.',stale_after_seconds:120,warnings:[],devices:[{id:'fixture-device',uuid:'GPU-CONTRACT-FIXTURE',vendor:'NVIDIA',model:'UI contract fixture',node:'test-node',node_match:'matched',entity_kind:'gpu',provenance:{source:'prometheus',adapter:'CONTRACT FIXTURE',identity_labels:{}},metrics:{utilization_percent:metric(0),temperature_celsius:metric(95,'stale','celsius'),memory_used_bytes:metric(null,'unknown','bytes'),memory_total_bytes:metric(80*1024**3,'fresh','bytes'),power_watts:metric(null,'conflict','watts'),ecc_uncorrected_errors:metric(0,'fresh','count')}}]};
+ state.observability.queues={status:'connected',detail:'CONTRACT FIXTURE ONLY. No live Kueue cluster.',workloads:[{id:'research/queued-fixture',namespace:'research',name:'queued-fixture',queue:'training',cluster_queue:'shared-training',admitted:false,conditions:[{type:'Admitted',status:'False',reason:'InsufficientQuota'}],pending_reasons:[{source:'Kueue condition',reason:'InsufficientQuota',detail:'Synthetic UI fixture: quota is unavailable.'}]}]};
+ state.summary.whole_gpu_requested=4;state.summary.whole_gpu_available=4;state.meta.observed_at='2026-11-11T12:01:00Z';click('#refresh');await tick();
+ check('fresh zero renders 0, stale numeric value is suppressed',()=>{const metrics=d.querySelectorAll('.evidence-metric');assert.match(metrics[0].textContent,/0%/);assert.match(metrics[1].textContent,/Unknown/);assert.doesNotMatch(metrics[1].textContent,/95/);assert.match(metrics[1].textContent,/stale/);assert.match(metrics[4].textContent,/conflict/);});
+ check('snapshot deltas use observed same-source requests and disclaim benchmarks',()=>{assert.match(d.querySelector('.snapshot-comparison').textContent,/\+2/);assert.match(d.querySelector('.snapshot-comparison').textContent,/not throughput or competitor benchmarks/);});
+ check('queue admission conditions are separate and never name-joined to pods',()=>{assert.match(d.querySelector('.queue-evidence').textContent,/InsufficientQuota/);assert.match(d.querySelector('.queue-evidence').textContent,/separate from Pod names/);});capture('stage-4-signal-evidence-fixture');
+ state.observability.telemetry.devices[0].metrics.power_watts=metric(40,'fresh','W','workload');click('#refresh');await tick();check('workload-scoped values never appear as physical device metrics',()=>{assert.match(d.querySelectorAll('.evidence-metric')[4].textContent,/Unknown/);assert.doesNotMatch(d.querySelectorAll('.evidence-metric')[4].textContent,/40 W/);});
+
+ click('[data-device-evidence="0"]');check('device inspection exposes raw provenance and scopes',()=>assert.match(d.getElementById('modal').textContent,/CONTRACT_FIXTURE_METRIC/));click('[data-action="close-dialog"]');
+ await nav('workloads');check('workload reasons display observed source and explanation',()=>{assert.match(text(),/Unschedulable/);assert.match(text(),/Insufficient nvidia.com\/gpu/);assert.match(text(),/PodScheduled/);});capture('stage-5-queue-reasons-fixture');
+ state.observability.telemetry.devices[0].model='<img src=x onerror=alert(1)>';state.workloads[0].pending_reasons[0].detail='<script>alert(1)</script>';click('#refresh');await tick();await nav('telemetry');check('external telemetry text is escaped',()=>{assert.equal(d.querySelectorAll('#main img,#main script').length,0);assert.match(text(),/<img src=x/);});
+ state.meta.source='kubernetes';click('#refresh');await tick();check('source change prevents misleading comparisons',()=>assert.match(d.querySelector('.snapshot-comparison').textContent,/first observation has no baseline/));
+ dom.reconfigure({url:'http://remote.example.test/#telemetry'});await nav('launch');click('[data-action="forget-execution"]');click('[data-action="connect-execution"]');check('non-loopback insecure origin cannot accept execution credential',()=>assert.equal(d.querySelector('#execution-token').disabled,true));
+ check('execution token is sent only to execution API',()=>assert.ok(requests.filter(r=>r.headers?.Authorization===`Bearer ${token}`).every(r=>r.url.startsWith('/api/v1/execution/'))));
+ console.log(`\n${checks} execution / telemetry UI fixture checks passed. No live cluster or GPU validation claimed.`);dom.window.close();
+})().catch(error=>{console.error(error);dom.window.close();process.exitCode=1;});

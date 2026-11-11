@@ -1,0 +1,134 @@
+/* DOM/API integration tests, not browser-rendering or real-cluster tests. */
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const os=require('node:os');
+const path=require('node:path');
+const {execFileSync}=require('node:child_process');
+const {JSDOM}=require('jsdom');
+const root=path.resolve(__dirname,'..');
+const scratch=fs.mkdtempSync(path.join(os.tmpdir(),'davano-ui-test-'));
+const dbPath=path.join(scratch,'ui.db');
+const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+const script=fs.readFileSync(path.join(root,'features.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'assignments.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'operations.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'app.js'),'utf8')+'\nwindow.__uiTest={conditionState,safeCredentialOrigin};';
+const dom=new JSDOM(html,{url:'http://localhost/',runScripts:'outside-only',pretendToBeVisual:true});
+const w=dom.window,d=w.document;
+let failedFetch=false, mutateResponse=null, checks=0, calls=[], holdFetch=null;
+w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};
+w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'));};
+w.fetch=async(url,options={})=>{
+  calls.push({url,options});if(holdFetch && ['/api/v1/evaluate','/api/v1/ray/plan'].includes(url))await holdFetch;
+  if(failedFetch)throw new Error('Inventory adapter unavailable');
+  const result=JSON.parse(execFileSync(process.env.PYTHON||'python',[path.join(__dirname,'api_bridge.py')],{input:JSON.stringify({db_path:dbPath,path:url,method:options.method||'GET',body:options.body?JSON.parse(options.body):undefined}),encoding:'utf8'}));
+  if(mutateResponse && url==='/api/v1/state')mutateResponse(result.body);
+  return {ok:result.status>=200&&result.status<300,json:async()=>result.body};
+};
+w.URL.createObjectURL=()=> 'blob:test';w.URL.revokeObjectURL=()=>{};
+const check=(name,fn)=>{fn();checks++;console.log(`PASS ${name}`);};
+const tick=()=>new Promise(resolve=>setTimeout(resolve,0));
+const click=selector=>{const el=d.querySelector(selector);assert.ok(el,selector);el.click();};
+const fill=(name,value)=>{const el=d.querySelector(`[name="${name}"]`);assert.ok(el,name);el.value=value;};
+const submit=async id=>{d.getElementById(id).dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await tick();};
+const nav=async page=>{w.location.hash=page;await tick();};
+const text=()=>d.getElementById('main').textContent;
+function savePreview(name){
+ if(!process.env.DAVANO_CAPTURE_STATIC)return;
+ const clone=d.documentElement.cloneNode(true);
+ for(const original of d.querySelectorAll('input,textarea,select')){
+  const copy=original.id?clone.querySelector('#'+original.id):null;if(!copy)continue;
+  if(original.tagName==='SELECT'){for(const option of copy.options)option.toggleAttribute('selected',option.value===original.value);}
+  else if(original.tagName==='TEXTAREA')copy.textContent=original.value;else copy.setAttribute('value',original.value);
+ }
+ fs.mkdirSync(path.join(root,'../screenshots'),{recursive:true});
+ fs.writeFileSync(path.join(root,'../screenshots',name+'.dom.html'),'<!doctype html>'+clone.outerHTML);
+}
+
+(async()=>{
+ w.eval(script);await tick();
+ check('overview renders actual backend fixture totals',()=>{assert.match(text(),/36/);assert.match(text(),/22/);assert.match(text(),/14/);assert.match(text(),/Unrequested capacity/);});
+ savePreview('stage-2-overview');
+ check('demo provenance and advisory boundary visible',()=>{assert.match(d.getElementById('source-chip').textContent,/Demo fixture/);assert.match(text(),/No cluster is connected/);assert.match(text(),/no resources are allocated/);});
+ for(const page of ['inventory','pools','workloads','assignments','launch','telemetry','policies','integrations','control','activity','overview']){await nav(page);check(`navigate ${page}`,()=>{assert.equal(d.querySelectorAll('h1').length,1);assert.equal(d.querySelector('[aria-current="page"]').getAttribute('href'),'#'+page);});}
+ await nav('launch');check('real API execution is disabled without seeded fake Jobs',()=>{assert.match(text(),/Workload execution is disabled/);assert.equal(d.querySelector('#execution-form'),null);});
+ await nav('telemetry');check('real API demo telemetry has no invented devices',()=>{assert.match(text(),/No device signal is invented/);assert.equal(d.querySelectorAll('.device-card').length,0);assert.match(text(),/unknown/i);});
+ await nav('inventory');
+ savePreview('stage-2-inventory');
+ check('inventory has six rows',()=>assert.equal(d.querySelectorAll('#inventory-body tr').length,6));
+ let input=d.getElementById('search');input.value='h100';input.dispatchEvent(new w.Event('input',{bubbles:true}));
+ check('inventory search filters by accelerator',()=>assert.equal(d.querySelectorAll('#inventory-body tr').length,3));
+ input.value='no-matching-node';input.dispatchEvent(new w.Event('input',{bubbles:true}));
+ check('empty search state is useful',()=>assert.match(text(),/No matching nodes/));
+ input.value='';input.dispatchEvent(new w.Event('input',{bubbles:true}));let select=d.getElementById('filter');select.value='NotReady';select.dispatchEvent(new w.Event('change',{bubbles:true}));
+ check('node-state filter excludes ready nodes',()=>assert.equal(d.querySelectorAll('#inventory-body tr').length,1));
+ click('[data-node]');
+ check('node details retain raw resource semantics',()=>assert.match(d.getElementById('modal').textContent,/Resource breakdown/));
+ click('[data-action="close-dialog"]');check('dialog close restores hidden state',()=>assert.equal(d.getElementById('modal').open,false));
+ await nav('pools');click('[data-action="create-pool"]');fill('name','UI Test');fill('id','ui-test');fill('selector_key','davano.dev/pool');fill('selector_value','training');
+ await submit('pool-form');check('create pool persists through API and refresh',()=>assert.match(text(),/UI Test/));
+ click('[data-action="create-pool"]');fill('name','Duplicate');fill('id','ui-test');fill('selector_key','davano.dev/pool');fill('selector_value','training');await submit('pool-form');
+ check('duplicate create reports API conflict without closing',()=>{assert.equal(d.getElementById('modal').open,true);assert.match(d.getElementById('form-error').textContent,/already exists/);});
+ click('[data-action="close-dialog"]');await nav('policies');click('[data-action="create-policy"]');fill('name','UI policy');fill('id','ui-policy');fill('pool_id','ui-test');fill('namespace','ui-test');fill('max_gpus_per_workload','4');await submit('policy-form');
+ check('create policy persists actual cap and namespace',()=>assert.match(text(),/UI policy/));
+ await nav('overview');click('[data-action="evaluate"]');fill('pool_id','training');fill('namespace','research');fill('vendor','NVIDIA');fill('gpu_count','4');await submit('evaluate-form');
+ check('fit check returns candidates with explicit no-allocation',()=>{const result=d.getElementById('evaluation-result').textContent;assert.match(result,/Fits the observed/);assert.match(result,/gpu-h100-02/);assert.match(result,/Not allocated. Not submitted./);});
+ savePreview('stage-3-advisory');
+ fill('gpu_count','999');await submit('evaluate-form');check('repeated evaluation replaces success with blocked result',()=>{assert.match(d.getElementById('evaluation-result').textContent,/Request does not fit/);assert.doesNotMatch(d.getElementById('evaluation-result').textContent,/Fits the observed/);});
+ fill('namespace','unknown-namespace');fill('gpu_count','1');await submit('evaluate-form');check('no matching policy blocks request',()=>assert.match(d.getElementById('evaluation-result').textContent,/No .*policy|No matching|policy/i));
+ click('[data-action="close-dialog"]');
+ click('[data-action="evaluate"]');fill('pool_id','training');fill('namespace','research');fill('vendor','NVIDIA');fill('gpu_count','4');
+ let release;holdFetch=new Promise(resolve=>{release=resolve;});
+ d.getElementById('evaluate-form').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
+ click('[data-action="close-dialog"]');await nav('pools');click('[data-action="create-pool"]');release();holdFetch=null;await tick();
+ check('closing an in-flight evaluation does not overwrite a newer dialog',()=>{assert.match(d.getElementById('dialog-title').textContent,/Create a resource pool/);assert.equal(d.getElementById('form-error').textContent,'');});
+ click('[data-action="close-dialog"]');await nav('workloads');
+ check('workload states render without changing cluster',()=>assert.match(text(),/Pending/));
+ select=d.getElementById('filter');select.value='Pending';select.dispatchEvent(new w.Event('change',{bubbles:true}));
+ check('pending workload filter shows two rows',()=>assert.equal(d.querySelectorAll('#workload-body tr').length,2));
+ await nav('activity');check('local configuration mutations appear in activity',()=>assert.match(text(),/UI Test|ui-test/));
+ click('#menu-toggle');check('mobile navigation toggle updates aria state',()=>assert.equal(d.getElementById('menu-toggle').getAttribute('aria-expanded'),'true'));await nav('overview');check('navigation closes mobile menu',()=>assert.equal(d.getElementById('menu-toggle').getAttribute('aria-expanded'),'false'));
+ mutateResponse=state=>{state.nodes[0].name='<img src=x onerror=alert(1)>';state.nodes[0].model='<script>bad()</script>';};click('#refresh');await tick();await nav('inventory');
+ check('external inventory text is escaped, not executable markup',()=>{assert.equal(d.querySelectorAll('#main img,#main script').length,0);assert.match(text(),/<img src=x/);});
+ mutateResponse=null;failedFetch=true;click('#refresh');await tick();
+ check('API failure is explicit and never falls back to fixtures',()=>{assert.match(text(),/Inventory unavailable/);assert.match(text(),/does not silently replace/);assert.equal(d.querySelectorAll('.metric').length,0);assert.match(d.getElementById('source-chip').textContent,/unavailable/);});
+ failedFetch=false;click('[data-action="retry"]');await tick();check('retry recovers inventory',()=>assert.match(text(),/GPU inventory/));
+ check('only expected same-origin API routes used',()=>assert.ok(calls.every(x=>/^\/api\/v1\/(state|pools|policies|evaluate|control\/(status|pools|policies)|ray\/(capabilities|plan)|execution\/status)$/.test(x.url))));
+ check('all API requests reject redirects and avoid browser cache',()=>assert.ok(calls.every(x=>x.options.redirect==='error'&&x.options.cache==='no-store'&&x.options.credentials==='same-origin')));
+ await nav('control');
+ check('control page reports disabled write authority without fake resources',()=>{assert.match(text(),/Cluster writes are disabled/);assert.match(text(),/No fixture resources/);assert.equal(d.querySelectorAll('[data-control-resource]').length,0);});
+ savePreview('stage-5-cluster-control');
+ check('control declares automatic grants disabled and legacy revocation uncertainty',()=>{assert.match(text(),/No new tenant workload access is granted/);assert.match(text(),/Subjects are declarations only/);assert.match(text(),/Legacy grants may remain/);});
+ savePreview('stage-8-control-safety');
+ check('missing and stale observed generations are never ready',()=>{const classify=w.__uiTest.conditionState;assert.equal(classify({metadata:{generation:2},status:{conditions:[{type:'Ready',status:'True',observedGeneration:1}]}}).label,'Status is stale');assert.equal(classify({metadata:{generation:2},status:{conditions:[{type:'Ready',status:'True'}]}}).label,'Status is stale');assert.equal(classify({metadata:{generation:2},status:{conditions:[{type:'Ready',status:'True',observedGeneration:2}]}}).label,'Reconciled');assert.equal(classify({metadata:{generation:2}}).label,'Pending reconciliation');});
+ click('[data-action="connect-api"]');
+ check('credential dialog explicitly uses memory-only control credential',()=>{assert.match(d.getElementById('modal').textContent,/stays in memory/);assert.match(d.getElementById('modal').textContent,/Do not enter a Kubernetes service-account token/);assert.equal(d.querySelector('[name="token"]').type,'password');assert.equal(d.querySelector('[name="token"]').autocomplete,'off');});
+ click('[data-action="close-dialog"]');
+ await nav('workloads');click('[data-action="plan-ray"]');
+ fill('name','training-demo');fill('namespace','research');fill('pool_id','training');fill('image','registry.example.com/team/trainer:1.2.3');fill('ray_version','2.55.1');fill('entrypoint','python /app/train.py');fill('workers','2');fill('gpus_per_worker','1');
+ await submit('ray-form');
+ check('Ray plan uses actual API and only enables export after success',()=>{assert.match(d.getElementById('manifest-result').textContent,/Manifest prepared/);assert.match(d.getElementById('manifest-result').textContent,/Not submitted. Not allocated/);assert.match(d.getElementById('manifest-result').textContent,/"suspend": true/);assert.equal(d.querySelector('[data-action="download-manifest"]').disabled,false);});
+ savePreview('stage-6-ray-plan');
+ fill('workers','999');d.querySelector('[name="workers"]').dispatchEvent(new w.Event('input',{bubbles:true}));
+ check('changing Ray input invalidates the export and preview',()=>{assert.equal(d.getElementById('manifest-result').textContent,'');assert.equal(d.querySelector('[data-action="download-manifest"]').disabled,true);});
+ await submit('ray-form');
+ check('Ray policy rejection cannot leave a success artifact',()=>{assert.notEqual(d.getElementById('form-error').textContent,'');assert.equal(d.querySelector('[data-action="download-manifest"]').disabled,true);});
+ fill('workers','1');fill('image','registry.example.com/team/trainer:latest');await submit('ray-form');
+ check('unpinned Ray image is rejected by server',()=>assert.notEqual(d.getElementById('form-error').textContent,''));
+ fill('image','registry.example.com/team/trainer:1.2.3');
+ let releaseRay;holdFetch=new Promise(resolve=>{releaseRay=resolve;});
+ const priorCalls=calls.filter(c=>c.url==='/api/v1/ray/plan').length;
+ d.getElementById('ray-form').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
+ d.getElementById('ray-form').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
+ check('repeated Ray submit does not duplicate a pending request',()=>assert.equal(calls.filter(c=>c.url==='/api/v1/ray/plan').length,priorCalls+1));
+ fill('workers','2');releaseRay();holdFetch=null;await tick();
+ check('changed Ray inputs suppress an in-flight stale plan',()=>{assert.equal(d.getElementById('manifest-result').textContent,'');assert.equal(d.querySelector('[data-action="download-manifest"]').disabled,true);});
+ holdFetch=new Promise(resolve=>{releaseRay=resolve;});
+ d.getElementById('ray-form').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
+ click('[data-action="close-dialog"]');await nav('pools');click('[data-action="create-pool"]');releaseRay();holdFetch=null;await tick();
+ check('late Ray response cannot replace a newer dialog',()=>{assert.match(d.getElementById('dialog-title').textContent,/Create a resource pool/);assert.equal(d.getElementById('form-error').textContent,'');});
+ click('[data-action="close-dialog"]');await nav('integrations');check('integration cards distinguish optional controller from planning-only Ray',()=>{assert.match(text(),/Available · disabled/);assert.match(text(),/Planning only/);assert.match(text(),/Optional controller: admission and quota/);assert.match(text(),/Manifest export only/);});savePreview('stage-7-integrations');
+
+
+ console.log(`\n${checks} DOM/API checks passed. No browser layout or real-cluster validation claimed.`);
+ fs.writeFileSync(path.join(scratch,'results.json'),JSON.stringify({checks,passed:true}));
+ dom.window.close();
+})().catch(error=>{console.error(error);dom.window.close();process.exitCode=1;});

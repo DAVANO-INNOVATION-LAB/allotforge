@@ -1,0 +1,29 @@
+# Illustrative future contracts. The app does not read these resources.
+apiVersion: fleet.davano.io/v1alpha1
+kind: DavanoPool
+metadata:
+  name: h100-mig
+  namespace: davano
+spec:
+  description: Illustrative MIG cohort. Does not reconfigure a GPU.
+  selector:
+    nvidia.com/mig.config: all-1g.10gb
+  resource:
+    kind: mig
+    resourceName: nvidia.com/mig-1g.10gb
+    unit: mig-instance
+    migProfile: 1g.10gb
+  ownerTeam: research
+  enforcement: advisory-only
+---
+apiVersion: fleet.davano.io/v1alpha1
+kind: DavanoOwnershipPolicy
+metadata:
+  name: research-mig
+  namespace: davano
+spec:
+  poolRef: h100-mig
+  workloadNamespace: research
+  ownerTeam: research
+  maxUnitsPerWorkload: 2
+  enforcement: advisory-only

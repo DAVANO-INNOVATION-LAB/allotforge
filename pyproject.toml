@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "davano"
+version = "0.2.0"
+description = "GPU inventory, Ray manifest planning and opt-in Kubernetes guardrail reconciliation"
+requires-python = ">=3.11"
+dependencies = ["fastapi==0.141.1", "uvicorn==0.52.1", "pydantic==2.13.4"]
+
+[tool.setuptools]
+packages = ["davano", "davano.web", "davano.fixtures"]
+package-dir = {"davano.web" = "web", "davano.fixtures" = "fixtures"}
+
+[tool.setuptools.package-data]
+"davano.web" = ["*.html", "*.css", "*.js"]
+"davano.fixtures" = ["*.json"]
+
+[project.scripts]
+davano = "davano.app:main"

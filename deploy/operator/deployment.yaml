@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: davano-controller
+  namespace: davano
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: davano-controller
+  template:
+    metadata:
+      labels:
+        app: davano-controller
+    spec:
+      serviceAccountName: davano-controller
+      automountServiceAccountToken: true
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      terminationGracePeriodSeconds: 30
+      containers:
+      - name: controller
+        image: davano:0.2.0
+        imagePullPolicy: IfNotPresent
+        command:
+        - python
+        - -m
+        - davano.operator
+        env:
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: DAVANO_MANAGED_NAMESPACES
+          value: tenant-example
+        - name: PYTHONDONTWRITEBYTECODE
+          value: '1'
+        ports:
+        - name: health
+          containerPort: 8081
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: '1'
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: health
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: health
+        startupProbe:
+          httpGet:
+            path: /healthz
+            port: health
+          failureThreshold: 30
+          periodSeconds: 5
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}

@@ -1,0 +1,57 @@
+# Optional review-only allocation API permissions. Not installed by default.
+# Replace namespace, policy and UID-derived names with exact reviewed targets.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: davano-allocation-observer
+rules:
+- apiGroups: [admissionregistration.k8s.io]
+  resources: [validatingadmissionpolicies, validatingadmissionpolicybindings]
+  resourceNames: [dga-replace-uid, dga-replace-uid-jobs]
+  verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: davano-allocation-observer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: davano-allocation-observer
+subjects:
+- kind: ServiceAccount
+  name: davano-control-api
+  namespace: davano
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: davano-allocation-editor
+  namespace: tenant-example
+rules:
+- apiGroups: [fleet.davano.io]
+  resources: [gpuaccesspolicies]
+  resourceNames: [research]
+  verbs: [get, update]
+- apiGroups: ['']
+  resources: [resourcequotas]
+  resourceNames: [dga-replace-uid]
+  verbs: [get]
+- apiGroups: [kueue.x-k8s.io]
+  resources: [localqueues]
+  resourceNames: [dga-replace-uid]
+  verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: davano-allocation-editor
+  namespace: tenant-example
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: davano-allocation-editor
+subjects:
+- kind: ServiceAccount
+  name: davano-control-api
+  namespace: davano

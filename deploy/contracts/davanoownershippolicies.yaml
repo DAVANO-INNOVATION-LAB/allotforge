@@ -1,0 +1,110 @@
+# Draft API design only. Deliberately excluded from every kustomization.
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: davanoownershippolicies.fleet.davano.io
+  annotations:
+    davano.io/lifecycle: DRAFT CONTRACT ONLY. Not watched, installed, reconciled or
+      enforced by this prototype.
+spec:
+  group: fleet.davano.io
+  scope: Namespaced
+  names:
+    kind: DavanoOwnershipPolicy
+    plural: davanoownershippolicies
+    singular: davanoownershippolicy
+    shortNames:
+    - dpolicy
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        required:
+        - spec
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          spec:
+            type: object
+            required:
+            - poolRef
+            - workloadNamespace
+            - maxUnitsPerWorkload
+            - enforcement
+            properties:
+              poolRef:
+                type: string
+                minLength: 1
+                maxLength: 63
+              workloadNamespace:
+                type: string
+                minLength: 1
+                maxLength: 63
+              ownerTeam:
+                type: string
+                minLength: 1
+                maxLength: 128
+              maxUnitsPerWorkload:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+              enforcement:
+                type: string
+                enum:
+                - advisory-only
+          status:
+            type: object
+            properties:
+              observedGeneration:
+                type: integer
+                minimum: 0
+              observedAt:
+                type: string
+                format: date-time
+              enforcement:
+                type: string
+                enum:
+                - advisory-only
+              conditions:
+                type: array
+                x-kubernetes-list-type: map
+                x-kubernetes-list-map-keys:
+                - type
+                items:
+                  type: object
+                  required:
+                  - type
+                  - status
+                  - lastTransitionTime
+                  - reason
+                  - message
+                  properties:
+                    type:
+                      type: string
+                      minLength: 1
+                    status:
+                      type: string
+                      enum:
+                      - 'True'
+                      - 'False'
+                      - Unknown
+                    lastTransitionTime:
+                      type: string
+                      format: date-time
+                    reason:
+                      type: string
+                      minLength: 1
+                    message:
+                      type: string
+                    observedGeneration:
+                      type: integer
+                      minimum: 0
+    subresources:
+      status: {}

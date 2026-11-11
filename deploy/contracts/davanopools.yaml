@@ -1,0 +1,142 @@
+# Draft API design only. Deliberately excluded from every kustomization.
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: davanopools.fleet.davano.io
+  annotations:
+    davano.io/lifecycle: DRAFT CONTRACT ONLY. Not watched, installed, reconciled or
+      enforced by this prototype.
+spec:
+  group: fleet.davano.io
+  scope: Namespaced
+  names:
+    kind: DavanoPool
+    plural: davanopools
+    singular: davanopool
+    shortNames:
+    - dpool
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        required:
+        - spec
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          spec:
+            type: object
+            required:
+            - selector
+            - resource
+            - enforcement
+            properties:
+              description:
+                type: string
+                maxLength: 1024
+              selector:
+                type: object
+                minProperties: 1
+                additionalProperties:
+                  type: string
+              resource:
+                type: object
+                required:
+                - kind
+                - resourceName
+                - unit
+                properties:
+                  kind:
+                    type: string
+                    enum:
+                    - whole-gpu
+                    - mig
+                    - time-sliced
+                    - mps
+                  resourceName:
+                    type: string
+                    pattern: ^[a-z0-9]([a-z0-9.-]*[a-z0-9])?/[A-Za-z0-9]([A-Za-z0-9_.-]*[A-Za-z0-9])?$
+                    maxLength: 317
+                  unit:
+                    type: string
+                    enum:
+                    - device
+                    - mig-instance
+                    - shared-slot
+                  migProfile:
+                    type: string
+                    minLength: 1
+                x-kubernetes-validations:
+                - rule: self.kind != 'whole-gpu' || self.unit == 'device'
+                  message: Whole GPUs are counted as devices.
+                - rule: self.kind != 'mig' || (self.unit == 'mig-instance' && has(self.migProfile))
+                  message: MIG requires a profile and a mig-instance unit.
+                - rule: '!(self.kind in [''time-sliced'', ''mps'']) || self.unit ==
+                    ''shared-slot'''
+                  message: Shared resources are scheduling slots, not devices.
+                - rule: self.kind == 'mig' || !has(self.migProfile)
+                  message: MIG profile is only valid for a MIG resource.
+              ownerTeam:
+                type: string
+                minLength: 1
+                maxLength: 128
+              enforcement:
+                type: string
+                enum:
+                - advisory-only
+          status:
+            type: object
+            properties:
+              observedGeneration:
+                type: integer
+                minimum: 0
+              observedAt:
+                type: string
+                format: date-time
+              enforcement:
+                type: string
+                enum:
+                - advisory-only
+              conditions:
+                type: array
+                x-kubernetes-list-type: map
+                x-kubernetes-list-map-keys:
+                - type
+                items:
+                  type: object
+                  required:
+                  - type
+                  - status
+                  - lastTransitionTime
+                  - reason
+                  - message
+                  properties:
+                    type:
+                      type: string
+                      minLength: 1
+                    status:
+                      type: string
+                      enum:
+                      - 'True'
+                      - 'False'
+                      - Unknown
+                    lastTransitionTime:
+                      type: string
+                      format: date-time
+                    reason:
+                      type: string
+                      minLength: 1
+                    message:
+                      type: string
+                    observedGeneration:
+                      type: integer
+                      minimum: 0
+    subresources:
+      status: {}

@@ -1,0 +1,8 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: davano-workload-submitter
+  annotations:
+    fleet.davano.io/security-status: 'Disabled: inert migration target; no workload
+      permissions are granted'
+rules: []

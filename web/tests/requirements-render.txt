@@ -1,0 +1,3 @@
+# Optional, development-only static preview generation.
+beautifulsoup4==4.15.0
+weasyprint==70.0

@@ -1,0 +1,20 @@
+.data/
+.venv/
+__pycache__/
+*.pyc
+*.db
+*.db-wal
+*.db-shm
+screenshots/
+build/
+*.egg-info/
+dist/
+
+# Local development dependencies and credentials
+node_modules/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+kubeconfig*

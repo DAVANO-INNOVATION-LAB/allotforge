@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: davano
+  namespace: davano
+spec:
+  template:
+    spec:
+      serviceAccountName: davano-control-api
+      automountServiceAccountToken: true
+      containers:
+      - name: davano
+        env:
+        - name: DAVANO_SOURCE
+          value: kubernetes
+        - name: DAVANO_CONTROL_ENABLED
+          value: 'true'
+        - name: DAVANO_API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: davano-control-api
+              key: token

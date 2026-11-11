@@ -1,0 +1,85 @@
+# Review-only example. No resources in this directory are installed by default.
+# Replace project/namespace/UID-derived resource names and review CNI behavior.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: execution-example
+  labels:
+    fleet.davano.io/project: research
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: davano-runtime
+  namespace: execution-example
+automountServiceAccountToken: false
+# No RoleBinding, secret, or imagePullSecret is granted to this runtime identity.
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-all
+  namespace: execution-example
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+  ingress: []
+  egress: []
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: davano-execution-bounds
+  namespace: execution-example
+spec:
+  hard:
+    count/jobs.batch: '20'
+---
+# This Role is for the trusted broker, NEVER a tenant identity.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: davano-execution-broker
+  namespace: execution-example
+rules:
+- apiGroups: [batch]
+  resources: [jobs]
+  verbs: [get, create, delete]
+- apiGroups: ['']
+  resources: [serviceaccounts]
+  resourceNames: [davano-runtime]
+  verbs: [get]
+- apiGroups: ['']
+  resources: [resourcequotas]
+  resourceNames: [davano-execution-bounds, dga-replace-uid]
+  verbs: [get]
+- apiGroups: [networking.k8s.io]
+  resources: [networkpolicies]
+  verbs: [get, list]
+- apiGroups: [fleet.davano.io]
+  resources: [gpuaccesspolicies]
+  resourceNames: [research]
+  verbs: [get]
+- apiGroups: [kueue.x-k8s.io]
+  resources: [workloads]
+  verbs: [get, list]
+- apiGroups: [kueue.x-k8s.io]
+  resources: [localqueues]
+  resourceNames: [dga-replace-uid]
+  verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: davano-execution-broker
+  namespace: execution-example
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: davano-execution-broker
+subjects:
+- kind: ServiceAccount
+  name: davano-execution-api
+  namespace: davano

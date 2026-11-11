@@ -1,0 +1,23 @@
+apiVersion: fleet.davano.io/v1alpha1
+kind: GPUPool
+metadata:
+  name: accelerator-a
+spec:
+  nodeSelector:
+    davano.io.node-restriction.kubernetes.io/pool: accelerator-a
+  resourceName: nvidia.com/gpu
+  nominalQuota: 8
+  mode: whole-gpu
+---
+apiVersion: fleet.davano.io/v1alpha1
+kind: GPUAccessPolicy
+metadata:
+  name: research
+  namespace: tenant-example
+spec:
+  poolRef: accelerator-a
+  gpuQuota: 4
+  maxGPUsPerPod: 2
+  subjects:
+  - kind: Group
+    name: research-team

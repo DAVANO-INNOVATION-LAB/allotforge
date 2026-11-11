@@ -1,0 +1,39 @@
+{
+  "profiles": [
+    {
+      "id": "gpu-smoke",
+      "label": "Administrator-reviewed GPU smoke test",
+      "image": "REPLACE_WITH_REVIEWED_IMAGE@sha256:REPLACE_WITH_64_HEX_DIGEST",
+      "command": ["/opt/bin/gpu-smoke"],
+      "cpu_millicores": 1000,
+      "memory_mib": 1024,
+      "gpu_max": 1,
+      "max_runtime_seconds": 300
+    }
+  ],
+  "projects": [
+    {
+      "id": "research",
+      "namespace": "execution-example",
+      "namespace_uid": "REPLACE-NAMESPACE-UID",
+      "policy": "research",
+      "policy_uid": "REPLACE-POLICY-UID",
+      "pool_uid": "REPLACE-POOL-UID",
+      "service_account": "davano-runtime",
+      "service_account_uid": "REPLACE-RUNTIME-SERVICEACCOUNT-UID",
+      "network_policy": "deny-all",
+      "execution_quota": "davano-execution-bounds",
+      "max_jobs": 20,
+      "history_limit": 1000,
+      "profiles": ["gpu-smoke"]
+    }
+  ],
+  "identities": [
+    {
+      "id": "research-submit",
+      "token_sha256": "REPLACE_WITH_SHA256_OF_HIGH_ENTROPY_TOKEN",
+      "projects": ["research"],
+      "role": "submitter"
+    }
+  ]
+}

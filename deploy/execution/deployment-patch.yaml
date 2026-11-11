@@ -1,0 +1,42 @@
+# Strategic merge PATCH, not an independently deployable Deployment.
+# Requires precreated davano-execution-data PVC and execution-config Secret.
+# Review target, TLS, network, persistence, images and all RBAC before applying.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: davano
+  namespace: davano
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    spec:
+      serviceAccountName: davano-execution-api
+      automountServiceAccountToken: true
+      containers:
+      - name: davano
+        env:
+        - name: DAVANO_SOURCE
+          value: kubernetes
+        - name: DAVANO_CONTROL_ENABLED
+          value: 'false'
+        - name: DAVANO_EXECUTION_ENABLED
+          value: 'true'
+        - name: DAVANO_EXECUTION_CONFIG_PATH
+          value: /etc/davano/execution/config.json
+        - name: DAVANO_DB_PATH
+          value: /data/execution.db
+        volumeMounts:
+        - name: execution-config
+          mountPath: /etc/davano/execution
+          readOnly: true
+      volumes:
+      - name: data
+        emptyDir: null
+        persistentVolumeClaim:
+          claimName: davano-execution-data
+      - name: execution-config
+        secret:
+          secretName: davano-execution-config
+          defaultMode: 0440

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: davano
+  namespace: davano
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: davano
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

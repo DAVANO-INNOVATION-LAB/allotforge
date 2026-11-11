@@ -1,0 +1,23 @@
+{
+  "blockers": [
+    "No NVIDIA device nodes visible",
+    "kubectl is not installed",
+    "No authorized target cluster/namespace or configured competitor endpoints supplied",
+    "Hardware, queue policies, approved image digest and runtime versions not attested"
+  ],
+  "checked_at": "2026-11-11T18:01:33.186859+00:00",
+  "commands_present": {
+    "docker": false,
+    "helm": false,
+    "kind": false,
+    "kubectl": false,
+    "nvidia-smi": false
+  },
+  "cpu_count": 9,
+  "environment": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "live_gpu_benchmark_ready": false,
+  "nvidia_device_nodes_present": false,
+  "python": "3.12.14",
+  "schema_version": 1,
+  "scope": "Local presence checks only; no kubeconfig, credentials, API requests, purchases or installation"
+}

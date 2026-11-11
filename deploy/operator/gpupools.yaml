@@ -1,0 +1,141 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: gpupools.fleet.davano.io
+spec:
+  group: fleet.davano.io
+  scope: Cluster
+  names:
+    kind: GPUPool
+    plural: gpupools
+    singular: gpupool
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+    subresources:
+      status: {}
+    additionalPrinterColumns:
+    - name: Ready
+      type: string
+      jsonPath: .status.conditions[?(@.type=="Ready")].status
+    - name: Age
+      type: date
+      jsonPath: .metadata.creationTimestamp
+    schema:
+      openAPIV3Schema:
+        type: object
+        required:
+        - spec
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          spec:
+            type: object
+            required:
+            - nodeSelector
+            - resourceName
+            - nominalQuota
+            - mode
+            properties:
+              nodeSelector:
+                type: object
+                minProperties: 1
+                maxProperties: 8
+                additionalProperties:
+                  type: string
+                  maxLength: 63
+                x-kubernetes-validations:
+                - rule: self.exists(k, k.startsWith('node-restriction.kubernetes.io/')
+                    || k.contains('.node-restriction.kubernetes.io/'))
+                  message: At least one NodeRestriction-protected label is required
+                - rule: self == oldSelf
+                  message: Pool placement is immutable; create a new pool
+              resourceName:
+                type: string
+                enum:
+                - nvidia.com/gpu
+                - amd.com/gpu
+                - gpu.intel.com/i915
+                - gpu.intel.com/xe
+                x-kubernetes-validations:
+                - rule: self == oldSelf
+                  message: Resource name is immutable
+              nominalQuota:
+                type: integer
+                minimum: 0
+                maximum: 100000
+              mode:
+                type: string
+                enum:
+                - whole-gpu
+                default: whole-gpu
+          status:
+            type: object
+            properties:
+              observedGeneration:
+                type: integer
+                format: int64
+              enforcement:
+                type: string
+                enum:
+                - pending
+                - kubernetes-native
+              lastReconcileTime:
+                type: string
+                format: date-time
+              queueName:
+                type: string
+              clusterQueueName:
+                type: string
+              managedResources:
+                type: array
+                items:
+                  type: object
+                  required:
+                  - kind
+                  - name
+                  properties:
+                    kind:
+                      type: string
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+              conditions:
+                type: array
+                x-kubernetes-list-type: map
+                x-kubernetes-list-map-keys:
+                - type
+                items:
+                  type: object
+                  required:
+                  - type
+                  - status
+                  - reason
+                  - message
+                  - lastTransitionTime
+                  properties:
+                    type:
+                      type: string
+                    status:
+                      type: string
+                      enum:
+                      - 'True'
+                      - 'False'
+                      - Unknown
+                    reason:
+                      type: string
+                    message:
+                      type: string
+                      maxLength: 1024
+                    observedGeneration:
+                      type: integer
+                      format: int64
+                    lastTransitionTime:
+                      type: string
+                      format: date-time

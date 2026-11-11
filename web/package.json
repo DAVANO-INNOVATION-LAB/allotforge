@@ -1,0 +1,13 @@
+{
+  "name": "davano-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Zero-runtime-dependency Davano UI; jsdom is used only for DOM contract tests.",
+  "scripts": {
+    "test": "node tests/ui.test.cjs && node tests/control.test.cjs && node tests/operations.test.cjs && node tests/assignments.test.cjs",
+    "check": "node --check app.js && node --check features.js && node --check operations.js && node --check assignments.js"
+  },
+  "devDependencies": {
+    "jsdom": "26.1.0"
+  }
+}

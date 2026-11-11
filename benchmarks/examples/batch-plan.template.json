@@ -1,0 +1,9 @@
+{
+  "namespace": "gpu-benchmark",
+  "queue": "benchmark",
+  "image": "REPLACE_WITH_APPROVED_IMAGE_AT_SHA256",
+  "node_selector": {
+    "bench.example.com/node-set": "approved-identical-hardware"
+  },
+  "sample_id": "block-001"
+}

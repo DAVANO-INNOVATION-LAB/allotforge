@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Proposed Davano capability discovery response (not served by the prototype)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source",
+    "read_only_cluster",
+    "enforcement",
+    "observation",
+    "capabilities"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1"
+    },
+    "source": {
+      "enum": [
+        "demo",
+        "kubernetes"
+      ]
+    },
+    "read_only_cluster": {
+      "const": true
+    },
+    "enforcement": {
+      "const": "advisory-only"
+    },
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "observed_at"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "fixture",
+            "current",
+            "stale",
+            "unavailable"
+          ]
+        },
+        "observed_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "level",
+          "detail"
+        ],
+        "properties": {
+          "id": {
+            "enum": [
+              "inventory",
+              "ownership",
+              "admission",
+              "quota",
+              "workload-submission",
+              "gpu-health",
+              "gpu-reconfiguration"
+            ]
+          },
+          "level": {
+            "enum": [
+              "read-only",
+              "advisory-only",
+              "unsupported"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

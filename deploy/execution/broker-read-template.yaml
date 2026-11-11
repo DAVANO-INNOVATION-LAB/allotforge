@@ -1,0 +1,44 @@
+# Review-only example. Replace UID-derived resource names before use.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: davano-execution-api
+  namespace: davano
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: davano-execution-read
+rules:
+- apiGroups: ['']
+  resources: [nodes, pods]
+  verbs: [get, list]
+- apiGroups: ['']
+  resources: [namespaces]
+  resourceNames: [execution-example]
+  verbs: [get]
+- apiGroups: [fleet.davano.io]
+  resources: [gpupools]
+  resourceNames: [training]
+  verbs: [get]
+- apiGroups: [kueue.x-k8s.io]
+  resources: [clusterqueues]
+  resourceNames: [dgp-replace-uid]
+  verbs: [get]
+- apiGroups: [admissionregistration.k8s.io]
+  resources: [validatingadmissionpolicies, validatingadmissionpolicybindings]
+  resourceNames: [dga-replace-uid, dga-replace-uid-jobs]
+  verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: davano-execution-read
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: davano-execution-read
+subjects:
+- kind: ServiceAccount
+  name: davano-execution-api
+  namespace: davano

@@ -1,0 +1,15 @@
+# REVIEW ONLY. Not referenced from any deployment root. No binding is supplied.
+# Queue observation must be separately enabled and restricted to trusted users.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: davano-queue-observer
+rules:
+  - apiGroups: ["kueue.x-k8s.io"]
+    resources: ["clusterqueues", "localqueues", "workloads"]
+    verbs: ["get", "list"]
+  - nonResourceURLs:
+      - /apis/kueue.x-k8s.io
+      - /apis/kueue.x-k8s.io/v1beta1
+      - /apis/kueue.x-k8s.io/v1beta2
+    verbs: ["get"]

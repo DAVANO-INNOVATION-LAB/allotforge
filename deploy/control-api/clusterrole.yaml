@@ -1,0 +1,29 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: davano-control-api
+rules:
+- apiGroups:
+  - ''
+  resources:
+  - nodes
+  - pods
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - fleet.davano.io
+  resources:
+  - gpupools
+  verbs:
+  - get
+  - list
+  - create
+  - delete
+- apiGroups:
+  - fleet.davano.io
+  resources:
+  - gpuaccesspolicies
+  verbs:
+  - get
+  - list

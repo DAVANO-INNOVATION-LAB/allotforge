@@ -1,0 +1,481 @@
+{
+  "description": "Synthetic demo. No actual cluster, devices, workloads, or organizations.",
+  "nodes": [
+    {
+      "metadata": {
+        "name": "gpu-h100-01",
+        "labels": {
+          "kubernetes.io/hostname": "gpu-h100-01",
+          "topology.kubernetes.io/zone": "us-east-1a",
+          "davano.dev/pool": "training",
+          "davano.dev/allocation-mode": "whole-gpu",
+          "davano.dev/model": "NVIDIA H100 80GB HBM3",
+          "nvidia.com/gpu.product": "NVIDIA H100 80GB HBM3",
+          "nvidia.com/gpu.sharing-strategy": "none",
+          "nvidia.com/gpu.replicas": "1",
+          "nvidia.com/mig.strategy": "none"
+        }
+      },
+      "spec": {},
+      "status": {
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "True"
+          }
+        ],
+        "capacity": {
+          "nvidia.com/gpu": "8"
+        },
+        "allocatable": {
+          "nvidia.com/gpu": "8"
+        }
+      }
+    },
+    {
+      "metadata": {
+        "name": "gpu-h100-02",
+        "labels": {
+          "kubernetes.io/hostname": "gpu-h100-02",
+          "topology.kubernetes.io/zone": "us-east-1b",
+          "davano.dev/pool": "training",
+          "davano.dev/allocation-mode": "whole-gpu",
+          "davano.dev/model": "NVIDIA H100 80GB HBM3",
+          "nvidia.com/gpu.product": "NVIDIA H100 80GB HBM3",
+          "nvidia.com/gpu.sharing-strategy": "none",
+          "nvidia.com/gpu.replicas": "1",
+          "nvidia.com/mig.strategy": "none"
+        }
+      },
+      "spec": {},
+      "status": {
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "True"
+          }
+        ],
+        "capacity": {
+          "nvidia.com/gpu": "8"
+        },
+        "allocatable": {
+          "nvidia.com/gpu": "8"
+        }
+      }
+    },
+    {
+      "metadata": {
+        "name": "gpu-h100-03",
+        "labels": {
+          "kubernetes.io/hostname": "gpu-h100-03",
+          "topology.kubernetes.io/zone": "us-east-1b",
+          "davano.dev/pool": "training",
+          "davano.dev/allocation-mode": "whole-gpu",
+          "davano.dev/model": "NVIDIA H100 80GB HBM3",
+          "nvidia.com/gpu.product": "NVIDIA H100 80GB HBM3",
+          "nvidia.com/gpu.sharing-strategy": "none",
+          "nvidia.com/gpu.replicas": "1",
+          "nvidia.com/mig.strategy": "none"
+        }
+      },
+      "spec": {},
+      "status": {
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "False"
+          }
+        ],
+        "capacity": {
+          "nvidia.com/gpu": "8"
+        },
+        "allocatable": {
+          "nvidia.com/gpu": "8"
+        }
+      }
+    },
+    {
+      "metadata": {
+        "name": "gpu-mi300-01",
+        "labels": {
+          "kubernetes.io/hostname": "gpu-mi300-01",
+          "topology.kubernetes.io/zone": "us-east-1a",
+          "davano.dev/pool": "research",
+          "davano.dev/allocation-mode": "whole-gpu",
+          "davano.dev/model": "AMD Instinct MI300X"
+        }
+      },
+      "spec": {},
+      "status": {
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "True"
+          }
+        ],
+        "capacity": {
+          "amd.com/gpu": "8"
+        },
+        "allocatable": {
+          "amd.com/gpu": "8"
+        }
+      }
+    },
+    {
+      "metadata": {
+        "name": "gpu-l40s-01",
+        "labels": {
+          "kubernetes.io/hostname": "gpu-l40s-01",
+          "topology.kubernetes.io/zone": "us-east-1a",
+          "davano.dev/pool": "inference",
+          "davano.dev/allocation-mode": "whole-gpu",
+          "davano.dev/model": "NVIDIA L40S",
+          "nvidia.com/gpu.product": "NVIDIA L40S",
+          "nvidia.com/gpu.sharing-strategy": "none",
+          "nvidia.com/gpu.replicas": "1",
+          "nvidia.com/mig.strategy": "none"
+        }
+      },
+      "spec": {},
+      "status": {
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "True"
+          }
+        ],
+        "capacity": {
+          "nvidia.com/gpu": "4"
+        },
+        "allocatable": {
+          "nvidia.com/gpu": "4"
+        }
+      }
+    },
+    {
+      "metadata": {
+        "name": "gpu-shared-01",
+        "labels": {
+          "kubernetes.io/hostname": "gpu-shared-01",
+          "topology.kubernetes.io/zone": "us-east-1a",
+          "davano.dev/pool": "sandbox",
+          "davano.dev/allocation-mode": "whole-gpu",
+          "davano.dev/model": "NVIDIA T4 (shared replicas)",
+          "nvidia.com/gpu.product": "NVIDIA T4 (shared replicas)",
+          "nvidia.com/gpu.sharing-strategy": "time-slicing",
+          "nvidia.com/gpu.replicas": "4",
+          "nvidia.com/mig.strategy": "none"
+        }
+      },
+      "spec": {},
+      "status": {
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "True"
+          }
+        ],
+        "capacity": {
+          "nvidia.com/gpu": "16"
+        },
+        "allocatable": {
+          "nvidia.com/gpu": "16"
+        }
+      }
+    }
+  ],
+  "pods": [
+    {
+      "metadata": {
+        "name": "llama-70b-finetune-0",
+        "namespace": "research",
+        "labels": {}
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "worker",
+            "resources": {
+              "requests": {
+                "nvidia.com/gpu": "4"
+              },
+              "limits": {
+                "nvidia.com/gpu": "4"
+              }
+            }
+          }
+        ],
+        "nodeName": "gpu-h100-01"
+      },
+      "status": {
+        "phase": "Running"
+      }
+    },
+    {
+      "metadata": {
+        "name": "embedding-training-0",
+        "namespace": "research",
+        "labels": {}
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "worker",
+            "resources": {
+              "requests": {
+                "nvidia.com/gpu": "2"
+              },
+              "limits": {
+                "nvidia.com/gpu": "2"
+              }
+            }
+          }
+        ],
+        "nodeName": "gpu-h100-01"
+      },
+      "status": {
+        "phase": "Running"
+      }
+    },
+    {
+      "metadata": {
+        "name": "vision-foundation-0",
+        "namespace": "research",
+        "labels": {}
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "worker",
+            "resources": {
+              "requests": {
+                "nvidia.com/gpu": "4"
+              },
+              "limits": {
+                "nvidia.com/gpu": "4"
+              }
+            }
+          }
+        ],
+        "nodeName": "gpu-h100-02"
+      },
+      "status": {
+        "phase": "Running"
+      }
+    },
+    {
+      "metadata": {
+        "name": "checkpoint-resume-0",
+        "namespace": "research",
+        "labels": {}
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "worker",
+            "resources": {
+              "requests": {
+                "nvidia.com/gpu": "4"
+              },
+              "limits": {
+                "nvidia.com/gpu": "4"
+              }
+            }
+          }
+        ],
+        "nodeName": "gpu-h100-03"
+      },
+      "status": {
+        "phase": "Running"
+      }
+    },
+    {
+      "metadata": {
+        "name": "rocm-benchmark-0",
+        "namespace": "research",
+        "labels": {}
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "worker",
+            "resources": {
+              "requests": {
+                "amd.com/gpu": "6"
+              },
+              "limits": {
+                "amd.com/gpu": "6"
+              }
+            }
+          }
+        ],
+        "nodeName": "gpu-mi300-01"
+      },
+      "status": {
+        "phase": "Running"
+      }
+    },
+    {
+      "metadata": {
+        "name": "inference-router-0",
+        "namespace": "production",
+        "labels": {}
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "worker",
+            "resources": {
+              "requests": {
+                "nvidia.com/gpu": "2"
+              },
+              "limits": {
+                "nvidia.com/gpu": "2"
+              }
+            }
+          }
+        ],
+        "nodeName": "gpu-l40s-01"
+      },
+      "status": {
+        "phase": "Running"
+      }
+    },
+    {
+      "metadata": {
+        "name": "notebook-session-0",
+        "namespace": "sandbox",
+        "labels": {}
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "worker",
+            "resources": {
+              "requests": {
+                "nvidia.com/gpu": "3"
+              },
+              "limits": {
+                "nvidia.com/gpu": "3"
+              }
+            }
+          }
+        ],
+        "nodeName": "gpu-shared-01"
+      },
+      "status": {
+        "phase": "Running"
+      }
+    },
+    {
+      "metadata": {
+        "name": "llama-eval-queued",
+        "namespace": "research",
+        "labels": {}
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "worker",
+            "resources": {
+              "requests": {
+                "nvidia.com/gpu": "4"
+              },
+              "limits": {
+                "nvidia.com/gpu": "4"
+              }
+            }
+          }
+        ]
+      },
+      "status": {
+        "phase": "Pending"
+      }
+    },
+    {
+      "metadata": {
+        "name": "realtime-embed-queued",
+        "namespace": "production",
+        "labels": {}
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "worker",
+            "resources": {
+              "requests": {
+                "nvidia.com/gpu": "2"
+              },
+              "limits": {
+                "nvidia.com/gpu": "2"
+              }
+            }
+          }
+        ]
+      },
+      "status": {
+        "phase": "Pending"
+      }
+    }
+  ],
+  "configuration": {
+    "pools": [
+      {
+        "id": "training",
+        "name": "Training",
+        "description": "H100 fleet for model training. Node-scoped, advisory membership.",
+        "selector": {
+          "davano.dev/pool": "training"
+        },
+        "vendor": "NVIDIA",
+        "mode": "whole-gpu"
+      },
+      {
+        "id": "inference",
+        "name": "Inference",
+        "description": "L40S nodes for production inference. No scheduling enforcement.",
+        "selector": {
+          "davano.dev/pool": "inference"
+        },
+        "vendor": "NVIDIA",
+        "mode": "whole-gpu"
+      },
+      {
+        "id": "research",
+        "name": "Research",
+        "description": "AMD Instinct nodes for ROCm workloads.",
+        "selector": {
+          "davano.dev/pool": "research"
+        },
+        "vendor": "AMD",
+        "mode": "whole-gpu"
+      }
+    ],
+    "policies": [
+      {
+        "id": "research-training",
+        "name": "Research training",
+        "pool_id": "training",
+        "namespace": "research",
+        "max_gpus_per_workload": 8,
+        "priority": "normal"
+      },
+      {
+        "id": "production-inference",
+        "name": "Production inference",
+        "pool_id": "inference",
+        "namespace": "production",
+        "max_gpus_per_workload": 2,
+        "priority": "high"
+      },
+      {
+        "id": "research-amd",
+        "name": "Research AMD",
+        "pool_id": "research",
+        "namespace": "research",
+        "max_gpus_per_workload": 4,
+        "priority": "low"
+      }
+    ]
+  }
+}

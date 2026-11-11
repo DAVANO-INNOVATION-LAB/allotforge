@@ -1,0 +1,57 @@
+{
+  "requests": 20,
+  "concurrency": 2,
+  "block_id": "block-001",
+  "model": "REPLACE_WITH_DEPLOYED_MODEL",
+  "max_tokens": 128,
+  "timeout_seconds": 60,
+  "product": {
+    "name": "GPUStack",
+    "version": "unknown"
+  },
+  "parity": {
+    "hardware": {
+      "cpu_model": null,
+      "gpu_count": null,
+      "gpu_memory_bytes": null,
+      "gpu_model": null,
+      "host_memory_bytes": null,
+      "mig_mode": null,
+      "network_topology": null,
+      "node_set_sha256": null,
+      "power_limit_w": null,
+      "sharing_mode": null
+    },
+    "runtime": {
+      "cuda": null,
+      "driver": null,
+      "engine": null,
+      "image_digest": null,
+      "kubernetes": null
+    },
+    "workload": {
+      "batch_size": null,
+      "precision": null,
+      "workload_sha256": null
+    },
+    "load": {
+      "arrival_pattern": null,
+      "cache_policy": null,
+      "concurrency": null,
+      "warmup_policy": null
+    },
+    "policy": {
+      "fair_share": null,
+      "preemption": null,
+      "priority": null,
+      "quota_gpus": null,
+      "security_controls": null
+    }
+  },
+  "provenance": {
+    "source_revision": null,
+    "artifact_sha256": null,
+    "capture_method": null,
+    "hardware_evidence_sha256": null
+  }
+}

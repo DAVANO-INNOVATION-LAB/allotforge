@@ -1,0 +1,14 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: davano
+  namespace: davano
+spec:
+  template:
+    spec:
+      automountServiceAccountToken: true
+      containers:
+        - name: davano
+          env:
+            - name: DAVANO_SOURCE
+              value: kubernetes

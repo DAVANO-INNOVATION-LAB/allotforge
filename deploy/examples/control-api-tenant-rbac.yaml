@@ -1,0 +1,29 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: davano-control-api
+  namespace: tenant-example
+rules:
+- apiGroups:
+  - fleet.davano.io
+  resources:
+  - gpuaccesspolicies
+  verbs:
+  - get
+  - list
+  - create
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: davano-control-api
+  namespace: tenant-example
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: davano-control-api
+subjects:
+- kind: ServiceAccount
+  name: davano-control-api
+  namespace: davano
