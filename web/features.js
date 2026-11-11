@@ -73,7 +73,14 @@ function openCredentials(){
  const safe=safeCredentialOrigin();
  showDialog('Authorize this session','Supply the administrator API credential configured for this server.',`<form id="credentials-form"><div class="notice">${icon('shield')}<div>This credential stays in memory and is sent only to this same-origin API. Reloading or disconnecting clears it. Do not enter a Kubernetes service-account token.</div></div>${safe?'':'<div class="notice error">Use HTTPS or a loopback origin before entering a credential.</div>'}<div class="field"><label for="field-token">Administrator API credential</label><input id="field-token" name="token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" required minlength="32" maxlength="4096" ${safe?'':'disabled'}></div><div id="form-error" class="validation-message" role="alert"></div></form>`,`<button class="button" data-action="close-dialog">Cancel</button><button class="button primary" type="submit" form="credentials-form" ${safe?'':'disabled'}>Use for this session</button>`);
 }
-function forgetCredentials(){apiToken='';allocationTarget=null;allocationPlan=null;if(executionStatus?.enabled){state=null;previousSnapshot=null;loadError='Administrator authentication required.';loadErrorStatus=401;}controlGeneration++;controlItems={pools:[],policies:[]};controlListError=null;controlLoading=false;render();toast('Session credential cleared from memory.');}
+function replaceAdministratorCredential(token){
+ apiToken=token;invalidateInventorySession();allocationTarget=null;allocationPlan=null;manifestPlan=null;pendingControlDeletion=null;
+ controlGeneration++;controlState=null;controlError=null;rayCapabilities=null;controlItems={pools:[],policies:[]};controlListError=null;controlLoading=false;
+ diagnosticsCredential=token;resetDiagnostics('Administrator credential changed. Run a new check for this session.');
+ const modal=document.getElementById('modal');if(!modal.querySelector('#credentials-form')){if(modal.open)closeDialog();modal.innerHTML='';}
+ return inventoryGeneration;
+}
+function forgetCredentials(){replaceAdministratorCredential('');render();toast('Session credential cleared from memory.');}
 function openControlForm(kind){
  if(!controlState?.enabled||!apiToken){openCredentials();return;}
  const pool=kind==='pools';
@@ -105,7 +112,7 @@ async function submitExtendedForm(event){
   if(form.id==='credentials-form'){
    if(!safeCredentialOrigin())throw new Error('A secure origin is required for credentials.');
    const token=String(values.token||'').trim();if(token.length<32||/[\r\n]/.test(token))throw new Error('Enter the configured control API credential.');
-   apiToken=token;form.reset();closeDialog();controlGeneration++;render();await load();await loadControlResources();toast(controlListError?'Credential supplied, but cluster access failed. Inspect the error.':'Credential is in memory for this session.');
+   form.reset();closeDialog();const session=replaceAdministratorCredential(token);render();await load();if(session!==inventoryGeneration)return;await loadControlResources();if(session!==inventoryGeneration)return;toast(controlListError?'Credential supplied, but cluster access failed. Inspect the error.':'Credential is in memory for this session.');
   }else if(form.id==='ray-form'){
    manifestPlan=null;document.getElementById('manifest-result').innerHTML='';document.querySelector('[data-action="download-manifest"]').disabled=true;
    const payload={...values,mode:'whole-gpu'};for(const key of ['workers','gpus_per_worker','worker_cpu','worker_memory_gib','head_cpu','head_memory_gib','active_deadline_seconds'])payload[key]=Number(payload[key]);

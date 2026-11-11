@@ -5,7 +5,7 @@ const {JSDOM}=require('jsdom'),root=path.resolve(__dirname,'..');
 const dom=new JSDOM(fs.readFileSync(path.join(root,'index.html'),'utf8'),{url:'http://localhost/#diagnostics',runScripts:'outside-only',pretendToBeVisual:true}),w=dom.window,d=w.document;
 w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'));};
 const admin='administrator-diagnostic-fixture-token-0001',otherAdmin='administrator-diagnostic-fixture-token-0002',project='project-only-diagnostic-fixture-token-0001';
-let checks=0,requests=[],stateStatus=503,diagnosticResponse=null;
+let checks=0,requests=[],stateStatus=503,diagnosticResponse=null,stateResponse=null,capabilityResponses={};
 const response=(status,data)=>({status,ok:status>=200&&status<300,json:async()=>JSON.parse(JSON.stringify(data))});
 const fixed=(id,status,evidence,detail,next_step)=>({id,status,evidence,detail,next_step});
 function report(overrides={}){return {schema_version:1,source:'kubernetes',mode:'read-only',observed_at:new Date().toISOString(),configured_modes:{control:'disabled',execution:'enabled',queue_observability:'enabled',pending_visibility:'disabled',prometheus:'configured'},checks:[
@@ -21,6 +21,8 @@ function report(overrides={}){return {schema_version:1,source:'kubernetes',mode:
 w.fetch=async(url,options={})=>{
  requests.push({url,options});
  if(url==='/api/v1/diagnostics')return diagnosticResponse?diagnosticResponse(url,options):response(200,report());
+ if(url==='/api/v1/state'&&stateResponse)return stateResponse(url,options);
+ if(capabilityResponses[url])return capabilityResponses[url](url,options);
  if(url==='/api/v1/state')return response(stateStatus,stateStatus===200?{meta:{source:'demo',observed_at:new Date().toISOString()},summary:{},pools:[],policies:[],workloads:[],events:[],integrations:[],nodes:[]}:{detail:'Inventory upstream unavailable'});
  if(url==='/api/v1/control/status')return response(200,{enabled:false,source:'kubernetes'});
  if(url==='/api/v1/execution/status')return response(200,{enabled:true,mode:'read-only'});
@@ -28,11 +30,14 @@ w.fetch=async(url,options={})=>{
  return response(404,{detail:'Unknown fixture route'});
 };
 const tick=()=>new Promise(r=>setTimeout(r,0)),click=s=>{const e=d.querySelector(s);assert.ok(e,s);e.click();},nav=async value=>{w.location.hash=value;await tick();},text=()=>d.getElementById('main').textContent,check=(name,fn)=>{fn();checks++;console.log('PASS '+name);},calls=()=>requests.filter(r=>r.url==='/api/v1/diagnostics');
-async function authorize(token){click('[data-action="connect-api"]');d.querySelector('[name="token"]').value=token;d.getElementById('credentials-form').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await tick();await tick();}
+function startAuthorization(token){click('[data-action="connect-api"]');d.querySelector('[name="token"]').value=token;d.getElementById('credentials-form').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));}
+async function authorize(token){startAuthorization(token);await tick();await tick();}
+function pendingResponse(){let resolve;return {promise:new Promise(r=>resolve=r),release:(status,data)=>resolve(response(status,data))};}
+function inventorySnapshot(name){return {meta:{source:'kubernetes',source_label:'Private inventory fixture',observed_at:new Date().toISOString()},summary:{},pools:[],policies:[],workloads:[],events:[],integrations:[],nodes:[],workload_advisor:{status:'connected',workloads:[{name,uid:name+'-uid',namespace:'research',assessment:{verdict:'cpu-comparison-candidate'}}]}};}
 function capture(name){if(!process.env.DAVANO_CAPTURE_STATIC)return;const clone=d.documentElement.cloneNode(true);for(const input of clone.querySelectorAll('input[type="password"]'))input.setAttribute('value','');const dir=path.join(root,'../screenshots/gap-build');fs.mkdirSync(dir,{recursive:true});fs.writeFileSync(path.join(dir,name+'.dom.html'),'<!doctype html>'+clone.outerHTML);}
 function hold(){let resolve;const promise=new Promise(r=>resolve=r);diagnosticResponse=()=>promise;return data=>resolve(response(200,data));}
 (async()=>{
- w.eval(['features.js','operations.js','assignments.js','diagnostics.js','app.js'].map(f=>fs.readFileSync(path.join(root,f),'utf8')).join('\n')+'\nwindow.__diagTest={normalizeDiagnostics,setProjectToken:value=>{executionToken=value;},render};');await tick();
+ w.eval(['features.js','operations.js','assignments.js','diagnostics.js','workload-advisor.js','app.js'].map(f=>fs.readFileSync(path.join(root,f),'utf8')).join('\n')+'\nwindow.__diagTest={normalizeDiagnostics,setProjectToken:value=>{executionToken=value;},render,session:()=>({state,previousSnapshot,busy,controlState,controlError,rayCapabilities,executionStatus,executionStatusError,controlItems,controlLoading,loadError,loadErrorStatus})};');await tick();
  check('diagnostics route stays accessible when inventory is unavailable',()=>{assert.match(text(),/Deployment diagnostics/);assert.ok(d.querySelector('[data-action="run-diagnostics"]'));assert.equal(calls().length,0);assert.equal(d.querySelector('[aria-current="page"]').getAttribute('href'),'#diagnostics');});capture('stage-12-diagnostics-empty');
  click('#refresh');await tick();await nav('control');await nav('diagnostics');
  check('navigation and ordinary inventory refresh never run diagnostics',()=>assert.equal(calls().length,0));
@@ -66,6 +71,58 @@ function hold(){let resolve;const promise=new Promise(r=>resolve=r);diagnosticRe
  diagnosticResponse=()=>response(200,report({source:'demo',checks:[fixed('inventory-nodes','observed','list-read','This must not become a live observation.','Verify separately.')]}));click('[data-action="run-diagnostics"]');await tick();check('demo source can never promote an observed status',()=>{assert.equal(d.querySelectorAll('.diagnostic-check .badge.blue').length,0);assert.equal(d.querySelectorAll('.diagnostic-check .badge.amber').length,1);});
  diagnosticResponse=()=>response(200,report({source:'demo',mode:'demo',configured_modes:{control:'disabled',execution:'disabled',queue_observability:'disabled',pending_visibility:'disabled',prometheus:'disabled'},checks:[fixed('mode-control','disabled','configuration','Cluster control is disabled.','Verify target-cluster configuration before enabling.'),fixed('demo-source','configured','configuration','Demo source has no live cluster evidence.','Connect an administrator-approved Kubernetes target separately.'),fixed('runtime-hardware','unverified','not-checked','Hardware has not been checked.','Verify on real GPU hardware.')],bounds:{requests_attempted:0,max_requests:12,request_timeout_seconds:2,report_budget_seconds:8,max_response_bytes:262144,list_limit:1}}));click('[data-action="run-diagnostics"]');await tick();check('demo report declares no external probes and no invented observations',()=>{assert.match(text(),/DEMO REPORT · NO EXTERNAL PROBES/);assert.match(text(),/Demo checks never contact Kubernetes or exporters/);assert.equal(d.querySelectorAll('.diagnostic-check .badge.blue').length,0);});capture('stage-12-diagnostics-demo');
  before=calls().length;stateStatus=401;click('#refresh');await tick();check('diagnostics remains usable when inventory becomes administrator-restricted',()=>{assert.ok(d.querySelector('[data-action="run-diagnostics"]'));assert.equal(calls().length,before);});
+
+ // Inventory and diagnostic reads share an administrator session, but only an
+ // explicit diagnostic click may run probes. Late inventory/capability results
+ // must not restore evidence from an abandoned administrator identity.
+ const diagnosticCount=calls().length,session=()=>w.__diagTest.session(),inventoryCalls=()=>requests.filter(r=>r.url==='/api/v1/state');
+ const authorizedState=(_url,options)=>options.headers.Authorization===`Bearer ${admin}`?response(200,inventorySnapshot('current-admin-pod')):response(403,{detail:'Administrator credential required'});
+ stateResponse=authorizedState;await authorize(admin);click('#refresh');await tick();
+ assert.ok(session().previousSnapshot);
+ await nav('advisor');click('[data-advisor-inspect]');await nav('diagnostics');
+ let oldInventory=pendingResponse();stateResponse=()=>oldInventory.promise;click('#refresh');await tick();
+ stateResponse=authorizedState;let inventoryCount=inventoryCalls().length;startAuthorization(otherAdmin);
+ check('credential replacement clears inventory and comparison baseline synchronously',()=>{assert.equal(session().state,null);assert.equal(session().previousSnapshot,null);assert.equal(session().controlState,null);assert.equal(session().rayCapabilities,null);assert.equal(session().controlItems.pools.length,0);assert.equal(session().controlItems.policies.length,0);assert.equal(d.getElementById('last-updated').textContent,'');assert.equal(d.querySelector('.advisor-detail'),null);});
+ await tick();await tick();
+ check('replacement starts one current credential refresh while an old load is pending',()=>{assert.equal(inventoryCalls().length,inventoryCount+1);assert.equal(inventoryCalls().at(-1).options.headers.Authorization,`Bearer ${otherAdmin}`);assert.equal(session().loadErrorStatus,403);assert.equal(session().busy,false);});
+ oldInventory.release(200,inventorySnapshot('late-old-admin-pod'));await tick();await nav('advisor');
+ check('late authorized success cannot repopulate advisor after invalid credential replacement',()=>{assert.match(text(),/Administrator inventory is restricted/);assert.equal(session().state,null);assert.equal(session().previousSnapshot,null);assert.equal(d.querySelector('[data-advisor-inspect]'),null);assert.doesNotMatch(d.body.textContent,/late-old-admin-pod|current-admin-pod/);});
+ await nav('workloads');check('ordinary inventory remains restricted after the same stale success',()=>{assert.match(text(),/Administrator inventory is restricted/);assert.equal(session().state,null);});
+
+ await nav('diagnostics');capabilityResponses['/api/v1/execution/status']=()=>response(503,{detail:'Execution status unavailable'});await authorize(admin);click('#refresh');await tick();
+ assert.equal(session().executionStatus,null);assert.ok(session().previousSnapshot);
+ await nav('advisor');click('[data-advisor-inspect]');await nav('diagnostics');
+ oldInventory=pendingResponse();const oldControl=pendingResponse(),oldRay=pendingResponse(),oldExecution=pendingResponse();
+ stateResponse=()=>oldInventory.promise;capabilityResponses={'/api/v1/control/status':()=>oldControl.promise,'/api/v1/ray/capabilities':()=>oldRay.promise,'/api/v1/execution/status':()=>oldExecution.promise};click('#refresh');await tick();click('[data-action="forget-api"]');
+ check('disconnect clears protected data even when execution capability is unknown',()=>{assert.equal(session().state,null);assert.equal(session().previousSnapshot,null);assert.equal(session().loadErrorStatus,401);assert.equal(session().busy,false);assert.equal(d.getElementById('refresh-icon').classList.contains('spin'),false);assert.equal(d.getElementById('modal').innerHTML,'');});
+ oldInventory.release(200,inventorySnapshot('disconnected-admin-pod'));oldControl.release(200,{enabled:true,source:'old-admin'});oldRay.release(200,{status:'old-admin-ray'});oldExecution.release(200,{enabled:true,mode:'old-admin'});await tick();
+ check('late inventory and capability successes cannot restore a disconnected session',()=>{assert.equal(session().state,null);assert.equal(session().previousSnapshot,null);assert.equal(session().controlState,null);assert.equal(session().rayCapabilities,null);assert.equal(session().executionStatus,null);assert.equal(session().loadErrorStatus,401);assert.equal(session().busy,false);});
+ stateResponse=authorizedState;capabilityResponses={};click('#refresh');await tick();
+ check('explicit disconnected refresh uses no administrator or project credential',()=>{assert.equal(inventoryCalls().at(-1).options.headers.Authorization,'');assert.equal(session().loadErrorStatus,403);assert.equal(session().state,null);});
+
+ await authorize(admin);oldInventory=pendingResponse();stateResponse=()=>oldInventory.promise;click('#refresh');await tick();
+ const revertedInventory=pendingResponse();stateResponse=(_url,options)=>options.headers.Authorization===`Bearer ${admin}`?revertedInventory.promise:response(403,{detail:'Administrator credential required'});
+ await authorize(otherAdmin);startAuthorization(admin);await tick();inventoryCount=inventoryCalls().length;
+ oldInventory.release(200,inventorySnapshot('old-before-revert-pod'));await tick();
+ check('change then revert rejects the first session despite identical credential text',()=>{assert.equal(session().state,null);assert.equal(session().previousSnapshot,null);assert.equal(session().busy,true);assert.equal(d.getElementById('refresh-icon').classList.contains('spin'),true);});
+ click('#refresh');check('stale finally cannot unlock duplicate refresh while current session is loading',()=>assert.equal(inventoryCalls().length,inventoryCount));
+ revertedInventory.release(200,inventorySnapshot('new-reverted-admin-pod'));await tick();await nav('advisor');
+ check('current reverted session completes and starts with a clean comparison baseline',()=>{assert.match(text(),/new-reverted-admin-pod/);assert.doesNotMatch(text(),/old-before-revert-pod/);assert.equal(session().previousSnapshot,null);assert.equal(session().busy,false);assert.equal(d.getElementById('refresh-icon').classList.contains('spin'),false);});
+
+ // Re-entering the same credential is a new session too, not an equality check.
+ await nav('diagnostics');oldInventory=pendingResponse();stateResponse=()=>oldInventory.promise;click('#refresh');await tick();stateResponse=()=>response(200,inventorySnapshot('same-token-new-session-pod'));await authorize(admin);oldInventory.release(200,inventorySnapshot('same-token-old-session-pod'));await tick();
+ check('repeated credential supply fences the preceding session',()=>{assert.equal(session().state.workload_advisor.workloads[0].name,'same-token-new-session-pod');assert.equal(session().previousSnapshot,null);assert.equal(session().loadError,null);});
+
+ for(const staleStatus of [403,503]){
+  oldInventory=pendingResponse();const controlFailure=pendingResponse(),rayFailure=pendingResponse(),executionFailure=pendingResponse();
+  stateResponse=()=>oldInventory.promise;capabilityResponses={'/api/v1/control/status':()=>controlFailure.promise,'/api/v1/ray/capabilities':()=>rayFailure.promise,'/api/v1/execution/status':()=>executionFailure.promise};click('#refresh');await tick();
+  stateResponse=()=>response(200,inventorySnapshot('new-success-after-'+staleStatus));capabilityResponses={'/api/v1/control/status':()=>response(200,{enabled:false,source:'current-session'}),'/api/v1/ray/capabilities':()=>response(200,{status:'current-session-ray'}),'/api/v1/execution/status':()=>response(200,{enabled:true,mode:'current-project-scope'})};await authorize(otherAdmin);
+  oldInventory.release(staleStatus,{detail:'Abandoned inventory failure'});controlFailure.release(503,{detail:'Abandoned control failure'});rayFailure.release(503,{detail:'Abandoned ray failure'});executionFailure.release(503,{detail:'Abandoned execution failure'});await tick();
+  check('stale '+staleStatus+' and capability errors cannot override a newer success',()=>{assert.equal(session().state.workload_advisor.workloads[0].name,'new-success-after-'+staleStatus);assert.equal(session().loadError,null);assert.equal(session().loadErrorStatus,null);assert.equal(session().controlState.source,'current-session');assert.equal(session().controlError,null);assert.equal(session().rayCapabilities.status,'current-session-ray');assert.equal(session().executionStatus.mode,'current-project-scope');assert.equal(session().executionStatusError,null);assert.equal(session().busy,false);});
+ }
+ stateResponse=authorizedState;capabilityResponses={};await authorize(admin);await nav('advisor');click('[data-advisor-inspect]');
+ check('next authorized reload and advisor inspection work after abandoned responses',()=>{assert.match(text(),/current-admin-pod/);assert.match(d.getElementById('modal').textContent,/current-admin-pod-uid/);assert.equal(session().loadError,null);assert.equal(session().previousSnapshot,null);});
+ check('session transitions never trigger diagnostics or send project tokens to administrator APIs',()=>{assert.equal(calls().length,diagnosticCount);assert.ok(requests.filter(r=>!r.url.startsWith('/api/v1/execution/')).every(r=>r.options.headers.Authorization!==`Bearer ${project}`));});
  check('diagnostic credentials never use project token or persistent storage',()=>{assert.ok(calls().every(r=>r.options.headers.Authorization!==`Bearer ${project}`));assert.equal(w.localStorage.length,0);assert.equal(w.sessionStorage.length,0);assert.ok(calls().every(r=>r.url==='/api/v1/diagnostics'));});
  console.log(`\n${checks} diagnostic UI contract checks passed. Synthetic fixtures only; no browser, deployment or GPU validation.`);dom.window.close();
 })().catch(error=>{console.error(error);dom.window.close();process.exitCode=1;});

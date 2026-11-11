@@ -1,4 +1,4 @@
-# AllotForge API v1 (0.5.0 development prototype)
+# AllotForge API v1 (0.6.0 development prototype)
 
 Responses use JSON. OpenAPI at `/openapi.json` and `/docs` describes current input schemas. Inputs reject unknown fields and constrain identifiers/counts. Mutating requests must be same-origin and bounded to 64 KiB; POST/PUT/PATCH require `application/json`. These checks are not a substitute for authentication.
 
@@ -231,3 +231,8 @@ Always inspect the phase, including after HTTP 202/200. An operation can remain 
 Input/schema errors normally return 422. Disabled authority returns 409; wrong credentials 401 or, for the unscoped execution-mode gate, 403. Missing/inaccessible resources return 404; ownership/current-state conflicts 409. Control/execution transports sanitize upstream errors; persistence/indeterminate failures may be 503 and require outcome reconciliation. Check the response and current object identity before retrying writes.
 
 Local API tests and controlled transport fixtures verify these contracts, not live target admission, GPU execution, CNI behavior, workload isolation or production readiness. No global `/api/v1/capabilities` endpoint is implemented; the similarly named JSON schema in `deploy/contracts` is a legacy design artifact.
+
+
+## Workload advisor evidence
+
+`GET /api/v1/state` includes `workload_advisor`. Inventory-only mode has no application authentication and must remain on loopback or behind a reviewed authenticated proxy. Advisor enablement does not add authentication. When project execution is enabled, the existing inventory middleware requires the separate administrator token; project credentials do not unlock advisor data. It contains all-Pod request budgets, a rolling-window observation status, policy thresholds, scoped metrics and limited-confidence experiment advice. It adds no mutation route. Unknown/stale/conflicting values are null, not zero; cost/performance remain unknown. The optional custom-adapter contract and attribution limits are documented in [Workload advisor](workload-advisor.md).

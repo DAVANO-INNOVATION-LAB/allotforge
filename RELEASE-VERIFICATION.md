@@ -1,24 +1,27 @@
-# AllotForge 0.5.0 verification
+# AllotForge 0.6.0 verification
 
-Local verification was performed on 2026-11-11 before publication. Remote CI status is recorded against the exact release commit in GitHub Actions, not anticipated here.
+Verification was performed on 2026-11-11 before publication. Remote CI status is recorded against the exact release commit in GitHub Actions, not anticipated here.
 
 ## Local checks
 
-- Full Python suite: **339 tests passed**, including **32 deployment-diagnostics tests**.
-- Full UI DOM/API suite: **200 checks passed** (64 main UI/API, 27 control, 57 operations, 24 assignments, 28 diagnostics).
-- Python compilation, all five JavaScript syntax checks and whitespace checks passed.
-- Diagnostics transport tests use a real ephemeral localhost HTTPS server for trusted/untrusted CA behavior, redirect rejection and error redaction. API tests cover the independent live administrator gate, disabled/demo isolation and runtime inventory failure.
-- Independent review found no remaining blocking issue. A separate 636-case malformed-payload sweep found no source-data leakage or request-limit violations. Missing discovery verbs and numeric overflow handling were corrected before publication.
-- Stage12 static previews cover initial, loading, demo, observed/blocked, stale and unauthorized states on desktop/mobile. They are labelled synthetic HTML/CSS previews, not browser QA or live cluster screenshots.
+- Full Python suite: **379 tests passed**, including 40 workload-advisor and 32 diagnostics tests.
+- Full UI DOM/API suite: **241 checks passed** (64 main UI/API, 27 control, 57 operations, 24 assignments, 43 diagnostics/session, 26 advisor).
+- Python compilation, all six JavaScript syntax checks and whitespace checks passed.
 
-## Exact-commit release gates
+## Feature and integration review
 
-The release workflow tests Python 3.11/3.12 and all UI contracts, then runs native admission and deployment checks on disposable Kubernetes 1.31.4. A new diagnostic parser smoke performs five fixed kubectl GETs under the existing CI identity: bounded Node/Pod lists, managed/native API discovery, and absent Kueue detection. The smoke checks its exact disposable context before reading; it never forwards its dummy fixture credential.
+The workload advisor was independently reviewed in isolation and again after integration with deployment diagnostics. Reproductions that could create false CPU-comparison suggestions from unpaired windows, unrelated CPU-only containers or multi-GPU averages were corrected with regressions. Exact fractional GPU parsing, malformed response sanitization and stale inspection handling were also tightened.
 
-The parser smoke validates real API response shapes, not the application's HTTPS transport or administrator authentication, target least-privilege RBAC, Kueue operation, controller correctness or hardware. Those evidence scopes stay distinct. Existing native admission smoke remains a separate positive/negative API-server test.
+The combined UI review exercises administrator-session changes during pending inventory refreshes. Old successes/errors cannot populate evidence after credential replacement, disconnect or change-and-revert. The report is advisory only and preserves performance/cost uncertainty.
 
-Only publishing receives contents-write permission. After all gates pass, it builds exact-commit source and wheel artifacts, verifies checksums, verifies main's head, refuses existing tags and publishes a development prerelease targeted to the tested SHA.
+## Verification scope
 
-## Limits
+Python tests cover identity attribution, raw timestamps, metric units, aligned buckets, minimum samples/span/coverage, gaps, restarts, duplicate/conflicting series, custom extended resources, malformed inputs, no-demo measurements, privacy and failure isolation. UI checks cover all existing route families, both new screens and interrupted/late responses. Real localhost HTTPS regression tests validate CA, redirect and sanitized-error behavior for the transport paths they exercise.
 
-No production cluster, real Kueue service, CNI/tenant isolation, exporter deployment, workload runtime or GPU hardware was validated or provisioned. Local HTTPS and synthetic contract tests do not establish target compatibility. No live browser interaction/layout validation was completed; DOM/API checks and static previews are not browser certification. Existing RuntimeClass restrictions and prerequisites remain in force. Historical CPU benchmark files remain 0.2.0 evidence, not new performance results. License selection remains pending.
+Stage 13 desktop/mobile/inspection previews use synthetic fixtures and are visibly labelled static, not browser QA. No live browser, trusted attribution adapter, real GPU or matched CPU/GPU performance trial was run. Historical CPU benchmark result files remain earlier evidence, not a new speed or cost comparison.
+
+## Exact-commit release gate
+
+The release workflow tests Python 3.11/3.12 and UI contracts, then runs native admission, diagnostic parser and deployment checks on disposable Kubernetes 1.31.4. These API-server checks do not validate Kueue scheduling, collector correctness, CNI, production authorization or workload/GPU execution. Only the publishing job receives contents-write permission; it verifies artifact checksums and the tested main head before creating a development prerelease and a new tag targeted to that commit.
+
+No production resources were provisioned or altered. RuntimeClass restrictions, target validation requirements, the trusted-operator access boundary and pending license selection remain in effect.

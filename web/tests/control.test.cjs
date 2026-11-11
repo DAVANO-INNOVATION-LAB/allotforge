@@ -36,7 +36,7 @@ const submit=async id=>{d.getElementById(id).dispatchEvent(new w.Event('submit',
 const check=(name,fn)=>{fn();checks++;console.log(`PASS ${name}`);};
 const text=()=>d.getElementById('main').textContent;
 (async()=>{
- w.eval(fs.readFileSync(path.join(root,'features.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'assignments.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'operations.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'diagnostics.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'app.js'),'utf8'));await tick();
+ w.eval(fs.readFileSync(path.join(root,'features.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'assignments.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'operations.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'diagnostics.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'workload-advisor.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'app.js'),'utf8'));await tick();
  check('enabled authority alone never presents reconciled resources',()=>{assert.match(text(),/Control API is enabled/);assert.match(text(),/Not authenticated/);assert.equal(d.querySelectorAll('[data-control-resource]').length,0);});
  check('control prominently distinguishes declarations from tenant access grants',()=>{assert.match(text(),/No new tenant workload access is granted/);assert.match(text(),/Legacy grants may remain/);});
  click('[data-action="connect-api"]');fill('token','wrong-test-credential-value-not-secret');await submit('credentials-form');

@@ -24,9 +24,9 @@ const esc = value => String(value ?? '').replace(/[&<>"']/g, c=>({'&':'&amp;','<
 const count = value => value === null || value === undefined ? 'Unknown' : Number(value).toLocaleString();
 const known = value => typeof value === 'number' && Number.isFinite(value);
 const percent = (a,b) => known(a)&&known(b)&&b>0 ? Math.min(100,Math.max(0,a/b*100)) : 0;
-const navItems=[['overview','Overview','grid'],['inventory','GPU inventory','chip'],['pools','Resource pools','layers'],['workloads','Workloads','activity'],['assignments','Resource assignment','layers'],['launch','Workload launch','arrow'],['telemetry','Device telemetry','activity'],['policies','Advisory policies','shield'],['integrations','Integrations','plug'],['control','Cluster control','server'],['diagnostics','Deployment diagnostics','shield'],['activity','Activity log','history']];
+const navItems=[['overview','Overview','grid'],['inventory','GPU inventory','chip'],['pools','Resource pools','layers'],['workloads','Workloads','activity'],['advisor','Workload advisor','search'],['assignments','Resource assignment','layers'],['launch','Workload launch','arrow'],['telemetry','Device telemetry','activity'],['policies','Advisory policies','shield'],['integrations','Integrations','plug'],['control','Cluster control','server'],['diagnostics','Deployment diagnostics','shield'],['activity','Activity log','history']];
 const titles=Object.fromEntries(navItems.map(([id,label])=>[id,label]));
-let state = null, loadError = null, loadErrorStatus = null, page='overview', query='', filter='all', busy=false;
+let state = null, loadError = null, loadErrorStatus = null, page='overview', query='', filter='all', busy=false, inventoryGeneration=0;
 let restoreFocus = null, toastTimer, dialogGeneration=0, evaluationRevision=0;
 let apiToken='', controlState=null, controlError=null, rayCapabilities=null, controlItems={pools:[],policies:[]}, controlListError=null, controlLoading=false, manifestPlan=null;
 const api = async (path,options={}) => {
@@ -38,22 +38,33 @@ const api = async (path,options={}) => {
   return data;
  } catch(error){if(error.name==='AbortError')throw new Error('The request timed out and its outcome may be unknown. Refresh the resource before retrying a change.');throw error;}finally{clearTimeout(timer);}
 };
-async function loadCapabilities(){
- const [control,ray,execution]=await Promise.allSettled([api('/control/status'),api('/ray/capabilities'),executionAPI('/status')]);
- executionStatus=execution.status==='fulfilled'?execution.value:null;executionStatusError=execution.status==='rejected'?execution.reason.message:null;
+function currentInventorySession(generation,credential){return generation===inventoryGeneration&&credential===apiToken;}
+function invalidateInventorySession(){
+ // A new session must not inherit inventory or a comparison baseline, even when
+ // execution capability is unknown. Old transports may finish, but cannot publish.
+ inventoryGeneration++;busy=false;state=null;previousSnapshot=null;loadError='Administrator authentication required.';loadErrorStatus=401;
+ invalidateAdvisorEvidence();document.getElementById('refresh-icon').classList.remove('spin');
+ document.getElementById('source-chip').className='source-chip';document.getElementById('source-chip').textContent='Inventory authorization required';document.getElementById('last-updated').textContent='';
+}
+async function loadCapabilities(generation,credential){
+ const headers={Authorization:credential?`Bearer ${credential}`:''},executionScope=executionGeneration;
+ const [control,ray,execution]=await Promise.allSettled([api('/control/status',{headers}),api('/ray/capabilities',{headers}),executionAPI('/status')]);
+ if(!currentInventorySession(generation,credential))return;
+ if(executionScope===executionGeneration){executionStatus=execution.status==='fulfilled'?execution.value:null;executionStatusError=execution.status==='rejected'?execution.reason.message:null;}
  controlState=control.status==='fulfilled'?control.value:null;controlError=control.status==='rejected'?control.reason.message:null;
  rayCapabilities=ray.status==='fulfilled'?ray.value:null;
 }
 async function load(silent=false){
  if(busy)return;busy=true;document.getElementById('refresh-icon').classList.add('spin');
+ const generation=inventoryGeneration,credential=apiToken;
  try{
-  const [snapshotResult]=await Promise.allSettled([api('/state'),loadCapabilities()]);if(snapshotResult.status==='rejected')throw snapshotResult.reason;const snapshot=snapshotResult.value;previousSnapshot=loadError?null:state;state=snapshot;loadError=null;loadErrorStatus=null;
+  const [snapshotResult]=await Promise.allSettled([api('/state',{headers:{Authorization:credential?`Bearer ${credential}`:''}}),loadCapabilities(generation,credential)]);if(!currentInventorySession(generation,credential))return;if(snapshotResult.status==='rejected')throw snapshotResult.reason;const snapshot=snapshotResult.value;invalidateAdvisorEvidence();previousSnapshot=loadError?null:state;state=snapshot;loadError=null;loadErrorStatus=null;
   document.getElementById('source-chip').className=`source-chip${state.meta.source==='demo'?'':' live'}`;
   document.getElementById('source-chip').innerHTML=`<span class="status-dot"></span>${esc(state.meta.source_label||state.meta.source)} · read-only`;
   document.getElementById('last-updated').textContent=`OBSERVED ${new Date(state.meta.observed_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
   render();if(['control','assignments'].includes(page)&&controlState?.enabled&&apiToken)loadControlResources();if(silent)toast('Inventory refreshed. No cluster changes.');
- }catch(error){loadError=error.message;loadErrorStatus=error.status;document.getElementById('source-chip').className='source-chip';document.getElementById('source-chip').innerHTML='Inventory unavailable';render();}
- finally{busy=false;document.getElementById('refresh-icon').classList.remove('spin');}
+ }catch(error){if(!currentInventorySession(generation,credential))return;invalidateAdvisorEvidence();loadError=error.message;loadErrorStatus=error.status;document.getElementById('source-chip').className='source-chip';document.getElementById('source-chip').innerHTML='Inventory unavailable';render();}
+ finally{if(currentInventorySession(generation,credential)){busy=false;document.getElementById('refresh-icon').classList.remove('spin');}}
 }
 function navigate(){leaveDiagnostics();clearMovePlan();invalidateAllocation();invalidateExecutionPlan();if(document.getElementById('modal').open)closeDialog();const next=location.hash.slice(1).split('?')[0]||'overview';page=titles[next]?next:'overview';query='';filter='all';render();closeMenu();if(['control','assignments'].includes(page)&&controlState?.enabled&&apiToken)loadControlResources();}
 function render(){
@@ -69,7 +80,7 @@ function render(){
  if(loadErrorStatus===401||loadErrorStatus===403){main.innerHTML=heading('Administrator inventory is restricted','Project execution uses its own scoped credential and remains available.')+`<div class="notice access-boundary">${icon('shield',19)}<div><strong>Project access does not expose cluster-wide inventory.</strong> ${esc(loadError)} Use Workload launch for your authorized project, or supply an administrator control credential for this view.</div></div><div class="heading-actions">${button('Open project execution','go-launch','arrow',true)}${button('Authorize administrator view','connect-api','shield')}</div>`;return;}
  if(loadError){main.innerHTML=heading('Inventory unavailable','The control plane could not read its configured data source.')+`<div class="notice error">${icon('info')}<div><strong>Connection failed</strong><p>${esc(loadError)}</p><p>AllotForge does not silently replace live data with demo fixtures.</p></div></div><button class="button primary" data-action="retry">Retry connection</button>`;return;}
  if(!state)return;
- main.innerHTML=`<div class="page-enter">${({overview,inventory,pools,workloads,policies,integrations,activity,control,telemetry})[page]()}</div>`;
+ main.innerHTML=`<div class="page-enter">${({overview,inventory,pools,workloads,advisor,policies,integrations,activity,control,telemetry})[page]()}</div>`;
 }
 function heading(title,subtitle,actions='') {return `<div class="page-heading"><div><div class="eyebrow">RESOURCE CONTROL PLANE</div><h1>${esc(title)}</h1><p class="subtitle">${esc(subtitle)}</p></div>${actions?`<div class="heading-actions">${actions}</div>`:''}</div>`;}
 const button=(label,action,symbol='plus',primary=false)=>`<button class="button ${primary?'primary':''}" data-action="${action}">${icon(symbol,14)}${label}</button>`;

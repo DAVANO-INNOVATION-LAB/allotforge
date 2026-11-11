@@ -5,7 +5,7 @@ import re
 import ssl
 from collections import defaultdict
 from copy import deepcopy
-from decimal import Decimal, DecimalException
+from decimal import Decimal, DecimalException, localcontext
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urlparse
@@ -15,6 +15,11 @@ from .store import now
 
 class InventoryUnavailable(RuntimeError):
     pass
+
+
+def pod_phase(pod):
+    value = pod.get("status", {}).get("phase")
+    return value if isinstance(value, str) and value in ("Pending", "Running", "Succeeded", "Failed", "Unknown") else "Unknown"
 
 
 def gpu_vendor(key):
@@ -29,9 +34,12 @@ def gpu_vendor(key):
 
 def quantity(value):
     """K8s Quantity to nonnegative integer; ambiguous/non-integral fails closed."""
-    if isinstance(value, bool):
+    if isinstance(value, bool) or not isinstance(value, (str, int)):
         return None
-    match = re.fullmatch(r"([+]?[0-9]+(?:\.[0-9]+)?)([numkMGTPE]|[KMGTPE]i|[eE][+-]?[0-9]+)?", str(value))
+    raw = str(value)
+    if len(raw) > 100:
+        return None
+    match = re.fullmatch(r"([+]?[0-9]+(?:\.[0-9]+)?)([numkMGTPE]|[KMGTPE]i|[eE][+-]?[0-9]+)?", raw)
     if not match:
         return None
     suffix = match[2] or ""
@@ -39,11 +47,21 @@ def quantity(value):
     scales.update({x: 1000 ** (i + 2) for i, x in enumerate("MGTPE")})
     scales.update({x + "i": 1024 ** (i + 1) for i, x in enumerate("KMGTPE")})
     try:
-        multiplier = Decimal(10) ** int(suffix[1:]) if suffix.startswith(("e", "E")) and len(suffix) > 1 else scales[suffix]
-        result = Decimal(match[1]) * multiplier
-        if not result.is_finite() or not 0 <= result <= 1_000_000 or (result == 0 and Decimal(match[1]) != 0):
-            return None
-        return int(result) if result == int(result) else None
+        with localcontext() as context:
+            # Preserve every bounded input digit; the default Decimal precision
+            # can round a fractional GPU request into an apparently whole GPU.
+            context.prec = 160
+            if suffix.startswith(("e", "E")) and len(suffix) > 1:
+                exponent = int(suffix[1:])
+                if not -30 <= exponent <= 30:
+                    return None
+                multiplier = Decimal(10) ** exponent
+            else:
+                multiplier = scales[suffix]
+            result = Decimal(match[1]) * multiplier
+            if not result.is_finite() or not 0 <= result <= 1_000_000 or (result == 0 and Decimal(match[1]) != 0):
+                return None
+            return int(result) if result == int(result) else None
     except (DecimalException, KeyError, ValueError, OverflowError):
         return None
 
@@ -131,7 +149,8 @@ def normalize(nodes, pods):
     requested = defaultdict(lambda: defaultdict(int))
     workloads = []
     for pod in pods:
-        if pod.get("status", {}).get("phase") in ("Succeeded", "Failed"):
+        phase = pod_phase(pod)
+        if phase in ("Succeeded", "Failed"):
             continue
         reqs = pod_requests(pod)
         if not reqs:
@@ -145,7 +164,7 @@ def normalize(nodes, pods):
         for key, count in reqs.items():
             if count == 0:
                 continue
-            workloads.append({"id": f"{meta.get('namespace', 'default')}/{meta.get('name', 'unknown')}:{key}", "name": meta.get("name", "unknown"), "namespace": meta.get("namespace", "default"), "status": pod.get("status", {}).get("phase", "Unknown"), "node": node_name, "gpu_count": count, "resource": key, "queue": meta.get("labels", {}).get("kueue.x-k8s.io/queue-name"), "origin": "observed-pod", "conditions": conditions(pod), "pending_reasons": pending_reasons(pod)})
+            workloads.append({"id": f"{meta.get('namespace', 'default')}/{meta.get('name', 'unknown')}:{key}", "name": meta.get("name", "unknown"), "namespace": meta.get("namespace", "default"), "status": phase, "node": node_name, "gpu_count": count, "resource": key, "queue": meta.get("labels", {}).get("kueue.x-k8s.io/queue-name"), "origin": "observed-pod", "conditions": conditions(pod), "pending_reasons": pending_reasons(pod)})
     result = []
     for node in nodes:
         meta, status, spec = node.get("metadata", {}), node.get("status", {}), node.get("spec", {})
@@ -187,8 +206,9 @@ class DemoInventory:
     def __init__(self, path):
         self.fixture = json.loads(Path(path).read_text())
     def snapshot(self):
+        from .workload_advisor import workload_inventory
         nodes, workloads = normalize(deepcopy(self.fixture["nodes"]), deepcopy(self.fixture["pods"]))
-        return {"nodes": nodes, "workloads": workloads, "observed_at": now(), "warnings": ["Demo fixture, not a connected cluster. Counts are synthetic."]}
+        return {"nodes": nodes, "workloads": workloads, "workload_inventory": workload_inventory(self.fixture["pods"], self.fixture["nodes"]), "observed_at": now(), "warnings": ["Demo fixture, not a connected cluster. Counts are synthetic."]}
 
 
 class KubernetesInventory:
@@ -236,5 +256,6 @@ class KubernetesInventory:
         # Nodes and pods are separate list snapshots, not an atomic allocation view.
         nodes = self._list("/api/v1/nodes")
         pods = self._list("/api/v1/pods")
+        from .workload_advisor import workload_inventory
         normalized, workloads = normalize(nodes, pods)
-        return {"nodes": normalized, "workloads": workloads, "observed_at": now(), "warnings": ["Read-only Kubernetes inventory. Node and pod lists are not an atomic snapshot.", "Unrequested resources are not physical GPU utilization or guaranteed schedulable capacity."]}
+        return {"nodes": normalized, "workloads": workloads, "workload_inventory": workload_inventory(pods, nodes), "observed_at": now(), "warnings": ["Read-only Kubernetes inventory. Node and pod lists are not an atomic snapshot.", "Unrequested resources are not physical GPU utilization or guaranteed schedulable capacity."]}

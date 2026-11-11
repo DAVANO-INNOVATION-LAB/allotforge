@@ -90,6 +90,8 @@ def metric_unknown(name, reason='This metric was not reported by a supported exp
 
 class PrometheusReader:
     """Fixed server-side query; no caller-supplied URL, query, or credential."""
+    metric_names = sorted(set(NVIDIA) | set(AMD))
+
     def __init__(self, origin, token_path=None, ca_path=None, opener=None, cluster=None):
         parsed = urlparse(origin)
         if (parsed.scheme != 'https' or not parsed.hostname or parsed.username or parsed.password
@@ -105,7 +107,7 @@ class PrometheusReader:
     def samples(self):
         # A normal instant vector replaces sample times with evaluation time;
         # asking for a raw range vector lets us identify stale source samples.
-        selector = '__name__=~"' + '|'.join(sorted(set(NVIDIA) | set(AMD))) + '"'
+        selector = '__name__=~"' + '|'.join(sorted(self.metric_names)) + '"'
         if self.cluster:
             selector += ',cluster=' + json.dumps(self.cluster)
         query = '{' + selector + '}[15m]'
@@ -137,7 +139,7 @@ class PrometheusReader:
             status = error.code
             error.close()
             raise ObservationUnavailable(f'Prometheus read failed (HTTP {status}).') from None
-        except (OSError, URLError, ValueError, TypeError, AttributeError):
+        except (OSError, URLError, ValueError, TypeError, AttributeError, RecursionError):
             raise ObservationUnavailable('Prometheus HTTPS read unavailable; check origin, CA and credential file.') from None
 
 

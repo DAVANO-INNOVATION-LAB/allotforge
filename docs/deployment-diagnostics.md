@@ -77,6 +77,8 @@ be read. A disabled feature is not presented as broken. Configured flags may sti
 have blocked or unavailable prerequisite checks; an enabled flag is never proof
 that its dependency works. Optional probe failure does not hide independent results.
 
+The workload advisor uses an additional custom attribution contract. The constant Prometheus check does not validate that adapter, its three metric names, identity attribution or sample coverage. Those remain unverified even when the diagnostic query succeeds.
+
 ## Bounds and failure handling
 
 Each report uses at most **12 GET requests**, a **2-second transport timeout** per

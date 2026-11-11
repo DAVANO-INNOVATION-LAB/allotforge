@@ -10,7 +10,7 @@ const root=path.resolve(__dirname,'..');
 const scratch=fs.mkdtempSync(path.join(os.tmpdir(),'davano-ui-test-'));
 const dbPath=path.join(scratch,'ui.db');
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
-const script=fs.readFileSync(path.join(root,'features.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'assignments.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'operations.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'diagnostics.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'app.js'),'utf8')+'\nwindow.__uiTest={conditionState,safeCredentialOrigin};';
+const script=fs.readFileSync(path.join(root,'features.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'assignments.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'operations.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'diagnostics.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'workload-advisor.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'app.js'),'utf8')+'\nwindow.__uiTest={conditionState,safeCredentialOrigin};';
 const dom=new JSDOM(html,{url:'http://localhost/',runScripts:'outside-only',pretendToBeVisual:true});
 const w=dom.window,d=w.document;
 let failedFetch=false, mutateResponse=null, checks=0, calls=[], holdFetch=null, mutateEvaluation=null;

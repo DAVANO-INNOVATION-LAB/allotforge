@@ -1,7 +1,9 @@
 import os
+from concurrent.futures import ThreadPoolExecutor
 from .inventory import InventoryUnavailable
 from . import __version__
 from .observability import ObservabilityService
+from .workload_advisor import WorkloadAdvisor
 
 
 def sum_known(items, key):
@@ -16,9 +18,10 @@ def pool_resources(pool, node):
 
 
 class FleetService:
-    def __init__(self, inventory, store, observability=None):
+    def __init__(self, inventory, store, observability=None, workload_advisor=None):
         self.inventory, self.store = inventory, store
         self.observability = observability or ObservabilityService(inventory.source)
+        self.workload_advisor = workload_advisor or WorkloadAdvisor(inventory.source)
 
     def state(self):
         snapshot = self.inventory.snapshot()
@@ -42,7 +45,16 @@ class FleetService:
             if overlap:
                 pool["warnings"].append("Overlapping membership; pools do not reserve resources: " + ", ".join(overlap))
         source = self.inventory.source
-        observability = self.observability.snapshot(nodes, snapshot["observed_at"])
+        # Independent bounded readers run together so the optional workload read
+        # does not add a second Prometheus timeout to inventory refresh latency.
+        if source == "kubernetes" and getattr(self.workload_advisor, "reader", None) is not None:
+            with ThreadPoolExecutor(max_workers=2) as readers:
+                observation_future = readers.submit(self.observability.snapshot, nodes, snapshot["observed_at"])
+                advisor_future = readers.submit(self.workload_advisor.snapshot, snapshot.get("workload_inventory", []), snapshot["observed_at"])
+                observability, workload_advisor = observation_future.result(), advisor_future.result()
+        else:
+            observability = self.observability.snapshot(nodes, snapshot["observed_at"])
+            workload_advisor = self.workload_advisor.snapshot(snapshot.get("workload_inventory", []), snapshot["observed_at"])
         return {
             "meta": {"source": source, "source_label": "Demo fixture" if source == "demo" else "Live Kubernetes · read-only", "observed_at": snapshot["observed_at"], "read_only_cluster": True, "enforcement": "advisory-only", "version": __version__, "warnings": snapshot["warnings"] + ["Pool and policy configuration is local metadata. No scheduler enforcement or allocation is implemented."]},
             "summary": {"nodes": len(nodes), "ready_nodes": sum(n["status"] == "Ready" for n in nodes), "whole_gpu_capacity": sum_known(nodes, "gpu_capacity"), "whole_gpu_allocatable": sum_known(nodes, "gpu_allocatable"), "whole_gpu_requested": sum_known(nodes, "gpu_requested"), "whole_gpu_available": sum_known(nodes, "gpu_available"), "pending_workloads": len({(w["namespace"], w["name"]) for w in workloads if w["status"] == "Pending"}), "pool_count": len(pools)},
@@ -55,6 +67,7 @@ class FleetService:
                 {"id": "gpu-telemetry", "name": "GPU telemetry", "status": observability["telemetry"]["status"], "detail": observability["telemetry"]["detail"]}
             ],
             "observability": observability,
+            "workload_advisor": workload_advisor,
             "events": self.store.events()
         }
 

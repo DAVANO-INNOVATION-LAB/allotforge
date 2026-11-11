@@ -2,6 +2,12 @@
 
 AllotForge is a development prototype, **not production-certified or a secure multi-tenant execution platform**. In default inventory-only mode, inventory/advisory endpoints have no application login. The optional Kubernetes control API uses a separate administrator bearer token. The optional constrained execution broker authenticates statically provisioned, project-scoped bearer identities; it is not OIDC/SSO or an organizational identity service. When execution is enabled, unscoped inventory/advisory routes also require the administrator token and fail closed when it is absent. Keep the app on loopback or a private network behind independently reviewed TLS and authentication.
 
+## Workload attribution is a separate trust boundary
+
+The optional workload advisor uses the fleet snapshot's existing access boundary. Enabling it, setting an administrator token or enabling control alone does not add authentication to inventory-only mode. Project execution mode requires the separate administrator token for the unscoped snapshot. Keep inventory-only deployments local or behind an independently reviewed authenticated proxy.
+
+The custom attribution adapter is not bundled. Exact Pod/container identity labels and coverage assertions are checked, but they do not cryptographically prove process/device attribution. Do not relabel device-wide exporter metrics as container measurements. Comparisons are advisory experiments, not automatic placement, performance guarantees or cost savings. See [the measurement contract](docs/workload-advisor.md).
+
 ## On-demand diagnostic boundary
 
 Live deployment diagnostics always require the separate 32–4096-character administrator bearer token, even if control and project execution are disabled. Demo diagnostics make no external calls. Diagnostics use fixed bounded GETs only, return no node/workload names or raw connection/credential/response contents, and never test writes or grant access. A successful read or advertised API verb is not proof of mutation permissions, admission enforcement, runtime health or tenant safety. Keep this endpoint behind the same independently reviewed trusted-operator ingress as the fleet console.
