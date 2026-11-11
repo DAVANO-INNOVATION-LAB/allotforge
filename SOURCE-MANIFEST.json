@@ -1,17 +1,17 @@
 {
-  "created_at": "2026-11-11T20:57:46.933873+00:00",
+  "created_at": "2026-11-11T21:06:38.535559+00:00",
   "files": {
     ".dockerignore": {
       "bytes": 75,
       "sha256": "ac18402ca81a8d9c7cbeb3d8277fb2b31da502ba68f2bcf61c0bbf84b7022fea"
     },
     ".github/workflows/native-admission.yml": {
-      "bytes": 1278,
-      "sha256": "ea0df5dd62f4c9e910eb6197347e1bc1db5cd228e82e3e95278cf2b4c166c082"
+      "bytes": 1397,
+      "sha256": "9b337ff6820ec3f630da74bb8e45de71419e4eeefce9561104f9fed40e9a976c"
     },
     ".github/workflows/release.yml": {
-      "bytes": 3362,
-      "sha256": "1fa52e622881f74a76916f5717118214306ea8b2430c02e59db6d7c0092f9581"
+      "bytes": 3451,
+      "sha256": "ffa04a048c794c54a7f66cccf8a6098379c5e79adfe4680879b28c911161efdc"
     },
     ".github/workflows/test.yml": {
       "bytes": 663,
@@ -34,8 +34,8 @@
       "sha256": "af77663b41554f53b2b6e42c700563ffc14ba38a42ce482e9129a59988eeef67"
     },
     "RELEASE-VERIFICATION.md": {
-      "bytes": 2561,
-      "sha256": "e6bf26c100fb247d4b3af7f847ba78326c72ddd892020a6f4240aa7c681ff6c0"
+      "bytes": 2835,
+      "sha256": "c14e1c4ca9a8d7c564d4ef51113a8f6290a906c4b09e2ac3e14148420a838957"
     },
     "SECURITY.md": {
       "bytes": 9577,
@@ -274,8 +274,8 @@
       "sha256": "61b1e3cb19c15f76a99609dc286f50f629a746ada4856a56525580624cd389cc"
     },
     "deploy/operator/gpuaccesspolicies.yaml": {
-      "bytes": 5140,
-      "sha256": "5dc96b856107af6e23c9a5a3d5a0b0e89b64290263b6e28907edd7ba276cf3fc"
+      "bytes": 5234,
+      "sha256": "2ac92d9281c52a3a0c615769bbc7195d48a8fbe8ac20ceade2fa461e372a1368"
     },
     "deploy/operator/gpupools.yaml": {
       "bytes": 4171,
@@ -378,8 +378,8 @@
       "sha256": "079bc3ef84033de1d36996ee00ecdbc061c8bca478f20a72afc38e395f285198"
     },
     "docs/releases/0.3.0.md": {
-      "bytes": 1531,
-      "sha256": "aadfbad5b8c7e2b44bf26306d9122580f34959ae529f4a6d3e25be975d7bbfce"
+      "bytes": 1732,
+      "sha256": "37bac712fd913edb74b7af882c52884ecbbf600666f6070badc58d51be3b386c"
     },
     "docs/resource-assignment.md": {
       "bytes": 8560,
@@ -414,8 +414,8 @@
       "sha256": "39516704f128efff14457c828a7acd6bfa6621049f6df1d53f78882cc10b84ac"
     },
     "scripts/verify_native_admission.py": {
-      "bytes": 5346,
-      "sha256": "b0bbee794ae1621debd9811e12646e6cdd2af7043ee7bea58be4e391cbc82939"
+      "bytes": 6485,
+      "sha256": "a25c4afd35c06d8a57d71644c7b2a8d947ffe976dc74ccb27e2235d5d5d42925"
     },
     "tests/test_api.py": {
       "bytes": 8541,
@@ -434,8 +434,8 @@
       "sha256": "a6fea64dd2229f95d637da401c7308739a46eaefeae3c81d5f69be1cbeb42d56"
     },
     "tests/test_control_manifests.py": {
-      "bytes": 5395,
-      "sha256": "3616992c07c35ec725237c8da3a33892a64e7c598d364ad2b222997cafa5a68a"
+      "bytes": 6179,
+      "sha256": "897aef34184688e917a6dc195e78481d0a429bd1e7fc6bcb00d7355101585841"
     },
     "tests/test_inventory.py": {
       "bytes": 8084,

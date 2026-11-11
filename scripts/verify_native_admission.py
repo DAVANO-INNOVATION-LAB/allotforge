@@ -47,6 +47,23 @@ try:
     # CRD structural/CEL validation against a real API server.
     kubectl('apply','-f',str(Path(__file__).resolve().parents[1]/'deploy/operator/gpupools.yaml'))
     kubectl('apply','-f',str(Path(__file__).resolve().parents[1]/'deploy/operator/gpuaccesspolicies.yaml'))
+    kubectl('wait','--for=condition=Established','--timeout=60s',
+            'crd/gpuaccesspolicies.fleet.davano.io')
+    # Exercise the CRD CEL rule, not just JSON Schema. namespace is a reserved
+    # CEL identifier escaped as __namespace__, but remains namespace on the wire.
+    def access_policy(subject):
+        return {'apiVersion':'fleet.davano.io/v1alpha1','kind':'GPUAccessPolicy',
+                'metadata':{'name':'subject-check','namespace':NS},
+                'spec':{**policy['spec'],'subjects':[subject]}}
+    for kind in ('User','Group','ServiceAccount'):
+        allowed(access_policy({'kind':kind,'name':'test'}))
+    allowed(access_policy({'kind':'ServiceAccount','name':'test','namespace':NS}))
+    for kind in ('User','Group'):
+        denied(access_policy({'kind':kind,'name':'test','namespace':NS}),
+               'Only ServiceAccounts have namespaces')
+    for name in ('system:authenticated','system:unauthenticated'):
+        denied(access_policy({'kind':'Group','name':name}),'Broad system groups are forbidden')
+    denied(access_policy({'kind':'User','name':'system:test'}),'System users are forbidden')
     for resource in resources:
         kubectl('apply','-f','-',body=resource)
     for policy_body in [r for r in resources if r['kind']=='ValidatingAdmissionPolicy']:

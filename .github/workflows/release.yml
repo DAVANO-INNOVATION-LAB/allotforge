@@ -2,7 +2,7 @@ name: Publish development prerelease
 on:
   push:
     branches: [main]
-    paths: [pyproject.toml, .github/workflows/release.yml]
+    paths: [pyproject.toml, .github/workflows/release.yml, .github/workflows/native-admission.yml, "deploy/**", scripts/verify_native_admission.py]
   workflow_dispatch:
 permissions:
   contents: read

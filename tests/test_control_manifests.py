@@ -64,4 +64,13 @@ class ControlManifestTests(unittest.TestCase):
         self.assertIn('node-restriction.kubernetes.io',fields['nodeSelector']['x-kubernetes-validations'][0]['rule'])
         subject=read('operator/gpuaccesspolicies.yaml')['spec']['versions'][0]['schema']['openAPIV3Schema']['properties']['spec']['properties']['subjects']['items']
         self.assertIn('system:authenticated',subject['x-kubernetes-validations'][0]['rule'])
+    def test_subject_namespace_guard_uses_crd_cel_reserved_name_escape(self):
+        subject=read('operator/gpuaccesspolicies.yaml')['spec']['versions'][0]['schema']['openAPIV3Schema']['properties']['spec']['properties']['subjects']['items']
+        # Kubernetes maps reserved schema properties to __{keyword}__ in CEL.
+        # Keep the public JSON property unchanged and enforce the same boundary.
+        self.assertIn('namespace',subject['properties'])
+        self.assertNotIn('__namespace__',subject['properties'])
+        rules=[r for r in subject['x-kubernetes-validations'] if r['message']=='Only ServiceAccounts have namespaces']
+        self.assertEqual(len(rules),1)
+        self.assertEqual(rules[0]['rule'],"self.kind == 'ServiceAccount' || !has(self.__namespace__)")
 if __name__=='__main__': unittest.main()

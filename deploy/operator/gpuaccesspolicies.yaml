@@ -88,7 +88,8 @@ spec:
                     message: Broad system groups are forbidden
                   - rule: self.kind != 'User' || !self.name.startsWith('system:')
                     message: System users are forbidden
-                  - rule: self.kind == 'ServiceAccount' || !has(self.namespace)
+                  # CRD CEL escapes reserved field names; the JSON key remains namespace.
+                  - rule: self.kind == 'ServiceAccount' || !has(self.__namespace__)
                     message: Only ServiceAccounts have namespaces
                 description: Requested subjects only. Automatic workload grants are
                   disabled in this release; this field confers no RBAC permissions.

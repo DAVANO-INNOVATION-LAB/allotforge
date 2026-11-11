@@ -11,6 +11,9 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -19,6 +22,7 @@ jobs:
         with:
           cluster_name: davano-ci
           node_image: kindest/node:v1.31.4
+          kubectl_version: v1.31.4
       - run: python scripts/verify_native_admission.py
         env:
           DAVANO_TEST_CONTEXT: kind-davano-ci
