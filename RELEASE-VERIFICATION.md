@@ -1,28 +1,27 @@
-# AllotForge 0.8.0 candidate verification
+# AllotForge 0.9.0 candidate verification
 
-This document describes the candidate verification scope, not publication. Any later remote CI or release must identify its exact tested commit in GitHub Actions.
+This document records local candidate checks, not publication or a successful live integration. Remote CI must identify its exact tested commit in GitHub Actions.
 
 ## Local checks
 
-- Full Python suite: **468 tests passed**, including 24 new timeline tests. Existing source, advisor, smoke-verifier and control tests remain included.
+- Full Python suite: **522 tests passed**, including 41 runner tests and 13 profile, manifest-preparation and workflow-contract tests.
 - Full UI DOM/API suite: **356 checks passed** (64 main UI/API, 27 control, 57 operations, 24 assignments, 43 diagnostics/session and 141 advisor).
-- Python compilation, all six JavaScript syntax checks, whitespace and local document links checked.
-- A 0.8.0 wheel was built locally with the updated advisor module and interface assets. Dependencies are unchanged.
+- Python compilation, all six JavaScript syntax checks, whitespace and local documentation links checked.
+- A 0.9.0 wheel was built locally. Runtime dependencies and UI dependency lock entries are unchanged. Acceptance tools are source-checkout tooling, not wheel entry points.
+- The official Kueue 0.20.5 manifest was downloaded and its exact 1,798,254 bytes and SHA-256 verified before YAML parsing. The preparation helper produced 92 resources with only the named controller image pinned to its verified digest. It did not contact or install into a cluster.
 
 ## Independent review
 
-Randomized comparison of 240 synthetic backend cases against the 0.7.0 baseline found identical prior summaries and assessments after stripping only the new timeline field. Additional cross-language checks generated 120 backend snapshots with microsecond bounds in both source modes: all 300 observed timelines rendered, all 60 cAdvisor GPU timelines remained withheld, and 23 malformed/source/unit/precision mutations were rejected.
+The reviewer approved scoped branch CI after checking all 54 focused tests, immutable private credential snapshots, fixed context and instance binding, subprocess bounds, precise object ownership and deletion preconditions, redacted evidence, failed-cleanup behavior, pinned upstream inputs, workflow shell syntax and explicit bounded cluster teardown. Unit-test transport doubles are not live Kubernetes evidence.
 
-The review also checked refresh and navigation invalidation, pending-load reopening, new-session credential changes and late old-session responses. Old inspected chart content is erased at refresh/navigation start. A pending refresh cannot reopen old evidence; late responses cannot cross the existing inventory session boundary. These checks are synthetic, not native browser or production authentication certification.
+## New compatibility gate
 
-## Data and interpretation boundaries
+A separate disposable CPU-only kind cluster pins Kubernetes 1.34.11 and Kueue 0.20.5 with v1beta2. The suite checks production resource-builder output against real APIs, queue activation, standalone CPU/memory Workload admission, a pending reservation, release and quota handoff, exact resource usage and fixture cleanup. The workflow destroys the cluster afterward. No workload Pods or Jobs are created by the runner. The Kueue installation itself runs controller Pods and installs privileged resources only inside this disposable test cluster.
 
-Only existing accepted metric windows become timelines. Every non-observed metric returns a null timeline. An accepted metric has exactly 15 rolling interval bounds, with null for any missing shared minute and zero only for a measured zero. Values retain the existing per-container mean/sum or GPU-weighted mean semantics. Timeline data do not alter the CPU/GPU assessment or imply whole-job profiling, performance, cost, physical device ownership or guaranteed capacity.
+This is generated-resource compatibility, not successful AllotForge managed-operator reconciliation. No GPU Node is invented, no hardware capacity is patched and no GPU workload runs. The compatibility matrix explicitly separates the older Kubernetes 1.31.4 native-admission gate, beta1 Ray bundle, OpenShift, physical GPUs, tenant authorization and production readiness.
 
-The cAdvisor source remains CPU/RAM-only and requires administrator-asserted timestamp preservation. No real cAdvisor collector, ingestion pipeline, GPU, target cluster or matched processor trial was run. No additional query, background polling, history store, runtime-socket access, cluster writes or paid resources were added.
+## Publication gate and limitations
 
-## Publication gate
+The candidate is prepared on a feature branch; main and published 0.8.0 remain unchanged unless a separately authorized update is completed. The new live integration has not been executed at the time this source document is authored. Inspect the exact CI run and its sanitized artifact for observed results. The report always states production_pass=false and cannot pass after fixture-cleanup failure.
 
-Stage 16 previews use the actual interface with synthetic observations and are visibly labelled static development-candidate previews, not native browser QA or real telemetry. The source and tests are prepared on a feature branch; main and the 0.7.0 release are unchanged unless a separately authorized update is completed.
-
-The existing main-branch release workflow requires Python 3.11/3.12 and UI checks, native admission/diagnostic parser/deployment checks on disposable Kubernetes 1.31.4, then a build of the exact source. Only the publishing job receives contents-write permission. It verifies artifact checksums and the tested main head before creating a development prerelease and a new tag. This gate does not validate real GPU execution, production authorization, Kueue scheduling, CNI or collector correctness.
+The main release build now depends on Python 3.11/3.12 and UI checks, the existing disposable Kubernetes 1.31.4 admission checks and this new CPU-only Kueue gate. Only the existing publishing job receives contents-write permission. It verifies checksums and the tested main head before publishing a new development prerelease and tag. These gates do not establish real GPU execution, collector correctness, workload schedulability, production authorization, OpenShift support, CNI behavior or a sustained pilot.

@@ -1,6 +1,6 @@
 {
   "name": "allotforge-web",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "private": true,
   "description": "Zero-runtime-dependency AllotForge UI; jsdom is used only for DOM contract tests.",
   "scripts": {

@@ -1,6 +1,6 @@
 # Kubernetes control plane
 
-This is implemented control-plane software, **not a verified production release**. The default app remains a fixture/read-only inventory and local advisory workspace. The separate operator and explicitly enabled control API manage real Kubernetes objects. No cluster or hardware was available for this build, so native admission acceptance, Kueue behavior, runtime images, and GPU scheduling are not certified.
+This is implemented control-plane software, **not a verified production release**. The default app remains a fixture/read-only inventory and local advisory workspace. The separate operator and explicitly enabled control API manage real Kubernetes objects. Disposable API-server checks and the separate generated-resource acceptance gate are documented below. A target production deployment, positive GPU-backed operator lifecycle, runtime images and GPU scheduling are not certified.
 
 ## What is implemented
 
@@ -28,7 +28,7 @@ RuntimeClass is unsupported for **all new Pods in managed GPU namespaces**, even
 
 ## Installation prerequisites and boundaries
 
-Target Kubernetes 1.30+ with stable ValidatingAdmissionPolicy, or an OpenShift release based on compatible Kubernetes APIs. Install and validate Kueue separately with ResourceFlavor/ClusterQueue/LocalQueue APIs and batch Job integration. Set `DAVANO_KUEUE_API_VERSION` to the served version (`v1beta1`, the current default, or `v1beta2`); newer Kueue releases may require `v1beta2`. The shared resource shape is implemented, but neither version has been cluster-validated in this build. No Kueue, KubeRay, GPU driver, or device-plugin installer is executed automatically.
+The implementation uses stable ValidatingAdmissionPolicy APIs available in Kubernetes 1.30+. This is an API floor, not a blanket compatibility claim; use the [version/evidence matrix](compatibility-matrix.md) and validate an exact Kubernetes/OpenShift target. Install and validate Kueue separately with ResourceFlavor/ClusterQueue/LocalQueue APIs and batch Job integration. Set `DAVANO_KUEUE_API_VERSION` to the served version (`v1beta1`, the current default, or `v1beta2`); newer Kueue releases may require `v1beta2`. The shared resource shape is implemented, but neither version has been cluster-validated in this build. No Kueue, KubeRay, GPU driver, or device-plugin installer is executed automatically.
 
 Before installation:
 
@@ -71,7 +71,7 @@ On controller or API unavailability, installed native objects remain active. A l
 
 Local tests cover desired-state persistence through an API double, idempotence, ownership conflicts, shared-mode rejection, overlapping pools, quotas, readiness conditions, namespace allowlisting, deletion guards, transport, authentication, and Lease fencing. Static schema/RBAC tests do not evaluate CEL.
 
-`python scripts/verify_native_admission.py` runs real API-server CRD/CEL/Pod/Job dry-run tests **only** against the disposable context `kind-davano-ci`, with `DAVANO_TEST_CONTEXT=kind-davano-ci`. The corresponding GitHub workflow is included but has not run here. It does not test Kueue or GPUs.
+`python scripts/verify_native_admission.py` runs real API-server CRD/CEL/Pod/Job dry-run tests **only** against the disposable context `kind-davano-ci`, with `DAVANO_TEST_CONTEXT=kind-davano-ci`. The corresponding exact-commit GitHub gate has passed for released candidates, including 0.8.0. It does not test Kueue or GPUs. The separate [pinned Kueue component gate](cluster-acceptance.md) exercises real beta2 queue admission with synthetic builder inputs and CPU-only standalone Workloads; it does not bypass whole-GPU eligibility or establish positive managed-controller lifecycle.
 
 Before production, complete all of these in an authorized staging cluster:
 

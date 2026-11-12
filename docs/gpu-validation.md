@@ -2,9 +2,11 @@
 
 **Status: preparation, not a completed hardware test.** The smoke verifier checks supplied files without contacting a cluster or executing a workload. Its tests use synthetic exports and logs. No real GPU, attribution collector, target driver, scheduler or matched CPU/GPU comparison has been validated by this change.
 
-## Software checks for this development change
+## Historical smoke-verifier software checks
 
 Local validation on 2026-11-11 passed 396 Python tests, including 17 smoke-verifier test methods with adversarial cases, plus 241 unchanged UI checks, six JavaScript syntax checks and Python compilation. Independent review also exercised 3,190 field mutations and 34 quantity edge cases. Oversized integers, contradictory attempts, duplicate Pod identities, malformed timezone offsets and output-file overwrites were checked. These are software and synthetic-fixture checks only. Remote CI, when run, is recorded on the draft PR; no new release is asserted by this document.
+
+The separate [Kubernetes/Kueue component suite](cluster-acceptance.md) can exercise a real API server and controller without GPU workloads. It does not satisfy the hardware matrix below. See the [compatibility/evidence matrix](compatibility-matrix.md) before choosing versions.
 
 ## First staging smoke
 

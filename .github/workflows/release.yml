@@ -2,7 +2,7 @@ name: Publish development prerelease
 on:
   push:
     branches: [main]
-    paths: [pyproject.toml, .github/workflows/release.yml, .github/workflows/native-admission.yml, "deploy/**", scripts/verify_native_admission.py]
+    paths: [pyproject.toml, .github/workflows/release.yml, .github/workflows/native-admission.yml, .github/workflows/kueue-acceptance.yml, "deploy/**", scripts/verify_native_admission.py]
   workflow_dispatch:
 permissions:
   contents: read
@@ -29,15 +29,19 @@ jobs:
           node-version: '22'
       - run: python -m pip install -r requirements-dev.txt
       - run: python -m unittest discover -s tests -v
-      - run: python -m compileall -q davano benchmarks
+      - run: python -m compileall -q davano benchmarks acceptance scripts/prepare_kueue_acceptance.py
       - run: npm ci --ignore-scripts && npm run check && npm test
         working-directory: web
   native-admission:
     uses: ./.github/workflows/native-admission.yml
     permissions:
       contents: read
+  kueue-acceptance:
+    uses: ./.github/workflows/kueue-acceptance.yml
+    permissions:
+      contents: read
   build:
-    needs: [validate, native-admission]
+    needs: [validate, native-admission, kueue-acceptance]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
