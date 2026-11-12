@@ -98,6 +98,10 @@ The HTTP Ray planner uses local whole-GPU pools and advisory policy. It builds s
 
 Standalone queue exports have deterministic names but no reconciliation or ownership. They are not interchangeable with the operator's UID-derived queues and must not overwrite managed objects. No live RayJob submission, Ray dashboard authorization, KubeRay installation, admission webhook validation or GPU runtime test is included. See [Ray/Kueue integration](ray-kueue.md).
 
+## Compatibility and acceptance
+
+The [version/evidence matrix](compatibility-matrix.md) distinguishes API floors, upstream source checks, actual disposable-cluster results and unverified hardware/production boundaries. The [Kueue component gate](cluster-acceptance.md) tests generated queue resources and CPU-only quota reservation; it never fabricates GPU nodes or claims successful GPU-backed operator reconciliation.
+
 ## Historical contracts and verification limits
 
 `deploy/contracts/capabilities.schema.json` is a **legacy design artifact**, not the current capability endpoint or an authoritative schema for opt-in control. `/api/v1/capabilities` is not served. Use the current state and separate `/control/status`, `/execution/status`, `/ray/capabilities`, `/observability` and the separately authorized `/diagnostics` routes.

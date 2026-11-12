@@ -34,7 +34,7 @@ An abbreviated **synthetic demo** response is:
     "observed_at": "<inventory observation timestamp>",
     "read_only_cluster": true,
     "enforcement": "advisory-only",
-    "version": "0.8.0"
+    "version": "0.9.0"
   },
   "summary": {
     "nodes": 6,

@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "scope": "generated-resource-compatibility",
+  "kind": {
+    "version": "v0.33.0",
+    "cluster_name": "allotforge-acceptance",
+    "context": "kind-allotforge-acceptance",
+    "kubernetes_version": "v1.34.11",
+    "node_image": "kindest/node:v1.34.11@sha256:44e222ee2132dab25ff87301682f89eb82c7880ea3a1bf543bfe9708fd08d67d",
+    "source": "https://github.com/kubernetes-sigs/kind/releases/tag/v0.33.0"
+  },
+  "kueue": {
+    "version": "v0.20.5",
+    "api_version": "v1beta2",
+    "namespace": "kueue-system",
+    "deployment": "kueue-controller-manager",
+    "manifest_url": "https://github.com/kubernetes-sigs/kueue/releases/download/v0.20.5/manifests.yaml",
+    "manifest_sha256": "c23f0a9001d2896f13d5592fe905a49bd276d26b84d16c762c474f0548ccff0d",
+    "manifest_bytes": 1798254,
+    "upstream_image": "registry.k8s.io/kueue/kueue:v0.20.5",
+    "image": "registry.k8s.io/kueue/kueue:v0.20.5@sha256:c91c4d4ffb3e38a686dbb2a4af936edcc6e613acf4b7074d84e0b990930203ea",
+    "source": "https://github.com/kubernetes/k8s.io/blob/06bb36dab7568c6ec933081d7b24dbc080d3e1d5/registry.k8s.io/images/k8s-staging-kueue/images.yaml"
+  },
+  "limits": {
+    "ci_job_minutes": 20,
+    "gpu_workloads": 0,
+    "paid_runners": false,
+    "physical_gpu_validation": false
+  }
+}
