@@ -53,6 +53,8 @@ The fixture has 36 labelled whole-GPU resource units and a separate shared-repli
 
 Other foundations include strict FastAPI inputs, source-separated SQLite databases, verified HTTPS transports with no redirects, conservative whole-GPU classification, ownership/precondition checks, and private non-root Kubernetes/OpenShift deployment source. These are implemented safeguards, not a claim that the system is safe for untrusted production tenants.
 
+See the [evidence-driven roadmap](docs/roadmap.md) for release slices and acceptance gates.
+
 ## What is still missing
 
 No live workload migration, checkpoint/data transfer, arbitrary existing-workload adoption, physical GPU movement, cross-policy atomic quota transfer, namespace CPU/memory-ceiling editor, SSO/OIDC, general interactive notebooks or shell/exec access, arbitrary workload templates, live RayJob submission, Slurm integration, cluster provisioning, GPU driver/device-plugin installation, MIG/MPS/time-slicing reconfiguration, autoscaling, multi-cluster management, immutable external audit retention or HA database design. Exporter adapters do not establish device-health certification, complete device discovery or workload-to-device ownership.

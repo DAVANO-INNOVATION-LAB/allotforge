@@ -17,6 +17,7 @@ from .models import ID_PATTERN, PoolCreate, StrictModel
 
 KUBERAY_VERSION = "1.7.2"
 KUEUE_API_VERSION = "kueue.x-k8s.io/v1beta1"
+KueueVersion = Literal["v1beta1", "v1beta2"]
 MODES = ("whole-gpu", "shared", "mig")
 WHOLE_RESOURCES = {"nvidia.com/gpu", "amd.com/gpu", "gpu.intel.com/i915", "gpu.intel.com/xe"}
 MIG_RESOURCE = re.compile(r"nvidia\.com/mig-[1-9][0-9]*g\.[1-9][0-9]*gb")
@@ -34,6 +35,7 @@ def generated_name(prefix, *parts):
 
 
 class RayJobRequest(StrictModel):
+    kueue_api_version: KueueVersion = "v1beta1"
     name: str = Field(pattern=ID_PATTERN, max_length=63)
     namespace: str = Field(pattern=ID_PATTERN, max_length=63)
     pool_id: str = Field(pattern=ID_PATTERN, max_length=63)
@@ -105,6 +107,7 @@ def validate_resource_mode(resource_name, mode):
 
 class QueueBundleRequest(StrictModel):
     """An explicit quota, never inferred from a per-workload limit or free GPUs."""
+    kueue_api_version: KueueVersion = "v1beta1"
     pool_id: str = Field(pattern=ID_PATTERN, max_length=63)
     namespace: str = Field(pattern=ID_PATTERN, max_length=63)
     node_selector: dict[str, str] = Field(min_length=1, max_length=8)
@@ -132,6 +135,7 @@ def build_kueue_bundle(request: QueueBundleRequest):
     Kueue quotas apply only to Kueue-managed workloads, not arbitrary pods.
     """
     request = QueueBundleRequest.model_validate(request)
+    api_version = f"kueue.x-k8s.io/{request.kueue_api_version}"
     queue = generated_name("davano", request.pool_id, request.namespace)
     flavor = generated_name("davano-gpu", request.pool_id, request.namespace)
     compute = generated_name("davano-cpu", request.pool_id, request.namespace)
@@ -142,9 +146,9 @@ def build_kueue_bundle(request: QueueBundleRequest):
             result["namespace"] = namespace
         return result
     return [
-        {"apiVersion": KUEUE_API_VERSION, "kind": "ResourceFlavor", "metadata": metadata(flavor), "spec": {"nodeLabels": dict(request.node_selector)}},
-        {"apiVersion": KUEUE_API_VERSION, "kind": "ResourceFlavor", "metadata": metadata(compute), "spec": {}},
-        {"apiVersion": KUEUE_API_VERSION, "kind": "ClusterQueue", "metadata": metadata(queue), "spec": {
+        {"apiVersion": api_version, "kind": "ResourceFlavor", "metadata": metadata(flavor), "spec": {"nodeLabels": dict(request.node_selector)}},
+        {"apiVersion": api_version, "kind": "ResourceFlavor", "metadata": metadata(compute), "spec": {}},
+        {"apiVersion": api_version, "kind": "ClusterQueue", "metadata": metadata(queue), "spec": {
             "namespaceSelector": {"matchLabels": {"kubernetes.io/metadata.name": request.namespace}},
             "queueingStrategy": "BestEffortFIFO",
             "resourceGroups": [
@@ -155,7 +159,7 @@ def build_kueue_bundle(request: QueueBundleRequest):
                 ]}]},
             ],
         }},
-        {"apiVersion": KUEUE_API_VERSION, "kind": "LocalQueue", "metadata": metadata(queue, request.namespace), "spec": {"clusterQueue": queue}},
+        {"apiVersion": api_version, "kind": "LocalQueue", "metadata": metadata(queue, request.namespace), "spec": {"clusterQueue": queue}},
     ]
 
 
@@ -307,6 +311,7 @@ def ray_capabilities():
     return {
         "status": "manifest-planning", "kuberay_version": KUBERAY_VERSION,
         "kueue_api_version": KUEUE_API_VERSION,
+        "kueue_api_versions": ["kueue.x-k8s.io/v1beta1", "kueue.x-k8s.io/v1beta2"],
         "submission_enabled": False, "modes": list(MODES), "api_modes": ["whole-gpu"],
         "limitations": [
             "Planning/export does not create Kubernetes resources or reserve GPUs.",
@@ -363,10 +368,11 @@ def create_ray_router(fleet):
         return {
             "status": "planned", "submitted": False, "allocated": False, "advisory_only": True,
             "source": state["meta"]["source"], "observed_at": state["meta"]["observed_at"],
+            "kueue_api_version": f"kueue.x-k8s.io/{request.kueue_api_version}",
             "manifest": manifest, **limits, "resource_name": request.resource_name, "mode": request.mode,
             "warnings": warnings,
             "prerequisites": [
-                "Install and validate KubeRay v1.7.2, compatible Kueue CRDs serving v1beta1, and the vendor device plugin.",
+                f"Install and validate KubeRay v1.7.2, compatible Kueue CRDs serving {request.kueue_api_version}, and the vendor device plugin.",
                 "Enable Kueue ray.io/rayjob integration and verify webhook readiness before applying the suspended RayJob.",
                 "Create a matching ResourceFlavor, ClusterQueue and LocalQueue with explicitly approved quotas; local policy does not create them.",
                 "Verify image/Ray version compatibility, application contents, image trust, network isolation and resource availability in the target cluster.",
