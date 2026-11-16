@@ -5,7 +5,7 @@
 `davano.ray_integration` builds actual Kubernetes API objects rather than simulated jobs:
 
 - `RayJob` (`ray.io/v1`), targeting **KubeRay v1.7.2**.
-- `ResourceFlavor`, `ClusterQueue`, and `LocalQueue` (`kueue.x-k8s.io/v1beta1`). The installed Kueue release must still serve this API version. Kueue 0.20.5 does not; this standalone bundle is incompatible with that target. The managed-controller beta2 flag does not rewrite Ray bundle APIs. See the [compatibility matrix](compatibility-matrix.md).
+- `ResourceFlavor`, `ClusterQueue`, and `LocalQueue` (`kueue.x-k8s.io/v1beta1` by default, or explicit `kueue_api_version="v1beta2"`). The installed Kueue release must serve the selected API version. Kueue 0.20.5 requires beta2; the default beta1 bundle remains incompatible with that target. The managed-controller environment flag does not rewrite Ray bundle APIs. Selection is per request and never inferred from ambient configuration. Both the pure `QueueBundleRequest` and HTTP `RayJobRequest` accept this field. The HTTP plan echoes the selected version and its prerequisites; it does not discover or certify compatibility. The RayJob itself remains `ray.io/v1` and suspended. See the [compatibility matrix](compatibility-matrix.md).
 - A read-only HTTP planner that checks persisted local policy and observed GPU resource modes before producing a suspended RayJob.
 
 **The Ray HTTP API does not submit jobs.** It makes no execution, admission, reservation, identity-authorization, or isolation claim. The separate managed operator is responsible for live GPUPool/GPUAccessPolicy reconciliation; its UID-owned queue names are not interchangeable with the planner's provisional names. Planning remains available in demo mode, with an explicit synthetic-data warning.

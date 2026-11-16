@@ -1,5 +1,7 @@
 """Cluster-free contract checks. These do not assert KubeRay admission works."""
 import copy
+import os
+from unittest.mock import patch
 import unittest
 
 from fastapi import FastAPI
@@ -163,6 +165,32 @@ class QueueBundleTests(unittest.TestCase):
         self.assertEqual(manifests[-1]["spec"]["clusterQueue"], cq["metadata"]["name"])
         self.assertEqual(manifests[-1]["metadata"]["namespace"], "research")
 
+    def test_explicit_beta2_preserves_bundle_contract(self):
+        fields = dict(pool_id="training", namespace="research", node_selector=POOL["selector"], nominal_gpu_quota=8, nominal_cpu_quota=64, nominal_memory_gib=256)
+        legacy = build_kueue_bundle(QueueBundleRequest(**fields))
+        beta2 = build_kueue_bundle(QueueBundleRequest(**fields, kueue_api_version="v1beta2"))
+        for old, new in zip(legacy, beta2):
+            self.assertEqual(new["apiVersion"], "kueue.x-k8s.io/v1beta2")
+            self.assertEqual({**new, "apiVersion": old["apiVersion"]}, old)
+        for bad in ("v1", "v1beta3", "kueue.x-k8s.io/v1beta2", "", None, True):
+            with self.subTest(version=bad), self.assertRaises(ValidationError):
+                QueueBundleRequest(**fields, kueue_api_version=bad)
+            with self.subTest(ray_version=bad), self.assertRaises(ValidationError):
+                request(kueue_api_version=bad)
+
+    def test_ambient_controller_flag_cannot_override_selection(self):
+        fields = dict(pool_id="training", namespace="research", node_selector=POOL["selector"], nominal_gpu_quota=8, nominal_cpu_quota=64, nominal_memory_gib=256)
+        for ambient in ("v1beta1", "v1beta2", "invalid"):
+            with patch.dict(os.environ, {"DAVANO_KUEUE_API_VERSION": ambient}):
+                self.assertTrue(all(o["apiVersion"] == "kueue.x-k8s.io/v1beta1" for o in build_kueue_bundle(QueueBundleRequest(**fields))))
+                self.assertTrue(all(o["apiVersion"] == "kueue.x-k8s.io/v1beta2" for o in build_kueue_bundle(QueueBundleRequest(**fields, kueue_api_version="v1beta2"))))
+
+    def test_beta2_selection_does_not_change_suspended_rayjob(self):
+        before = build_suspended_ray_job(request(), POOL, [POLICY], "approved-queue")
+        after = build_suspended_ray_job(request(kueue_api_version="v1beta2"), POOL, [POLICY], "approved-queue")
+        self.assertEqual(before, after)
+        self.assertTrue(after["spec"]["suspend"])
+
     def test_resource_flavor_limits_selector_to_eight_labels(self):
         fields = {"pool_id": "training", "namespace": "research", "nominal_gpu_quota": 8, "nominal_cpu_quota": 64, "nominal_memory_gib": 256}
         eight = {f"example.com/label-{i}": "gpu" for i in range(8)}
@@ -220,6 +248,19 @@ class RayPlannerAPITests(unittest.TestCase):
         self.assertTrue(plan["manifest"]["spec"]["suspend"])
         self.assertTrue(any("synthetic demo" in warning for warning in plan["warnings"]))
         self.assertEqual(before, self.fleet.data)
+    def test_plan_reports_explicit_queue_api_without_submission(self):
+        before = copy.deepcopy(self.fleet.data)
+        for version in ("v1beta1", "v1beta2"):
+            response = self.client.post("/api/v1/ray/plan", json={**BASE, "kueue_api_version": version})
+            self.assertEqual(response.status_code, 200)
+            plan = response.json()
+            self.assertEqual(plan["kueue_api_version"], "kueue.x-k8s.io/" + version)
+            self.assertIn("serving " + version, plan["prerequisites"][0])
+            self.assertFalse(plan["submitted"])
+            self.assertTrue(plan["manifest"]["spec"]["suspend"])
+        self.assertEqual(before, self.fleet.data)
+        self.assertEqual(self.client.post("/api/v1/ray/plan", json={**BASE, "kueue_api_version": "v1"}).status_code, 422)
+
     def test_no_policy_or_unobserved_mode_blocks(self):
         self.fleet.data["policies"] = []
         self.assertEqual(self.client.post("/api/v1/ray/plan", json=BASE).status_code, 422)
@@ -243,6 +284,8 @@ class RayPlannerAPITests(unittest.TestCase):
         self.assertEqual(self.client.post("/api/v1/ray/plan", json={**BASE, "workers": True}).status_code, 422)
     def test_capabilities_do_not_advertise_cluster_writes(self):
         result = self.client.get("/api/v1/ray/capabilities").json()
+        self.assertEqual(result["kueue_api_version"], "kueue.x-k8s.io/v1beta1")
+        self.assertEqual(result["kueue_api_versions"], ["kueue.x-k8s.io/v1beta1", "kueue.x-k8s.io/v1beta2"])
         self.assertFalse(result["submission_enabled"])
         self.assertEqual(result["kuberay_version"], "1.7.2")
         self.assertEqual(result["api_modes"], ["whole-gpu"])
